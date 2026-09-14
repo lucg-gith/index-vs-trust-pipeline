@@ -7,7 +7,9 @@ Build the starting list of UK investment trusts to evaluate, without relying on 
 Loads a human-curated reference list of trust names and tickers into Bronze. Does not download price history (that's `ingest_trust_prices`) and does not rank or filter by performance (that's `select_top20_trusts` in Silver).
 
 ## Inputs
-`data/trust_universe_seed.csv` — hand-curated, columns: `trust_name, ticker, aic_sector, source_url`.
+`data/trust_universe_seed.csv` — hand-curated, columns: `trust_name, ticker, aic_sector, is_active, source_url, notes`.
+
+`is_active` is derived from the research notes (delisted/wound-up/merged trusts are flagged `false`) — one row (`Island Innovation Trust`) has it blank pending manual resolution of whether it's a real, distinct trust or a mix-up with `Schroders Capital Global Innovation Trust` (ticker `INOV`).
 
 **Deliberately not automated:** an earlier version of this spec called for scraping ticker values out of Wikipedia infoboxes per trust. That was dropped — infobox formats aren't consistent trust-to-trust, so a scraper would be fragile, and this is a small (~123 rows), static, one-time list that doesn't justify the engineering cost of reliable automated parsing. The trust *names* came from Wikipedia's "Investment trusts of the United Kingdom" category (freely reusable content, pulled once); tickers and sectors are filled in by hand from the AIC's member directory (manual browsing only — their Terms of Use explicitly ban automated scraping) or a per-name search as a fallback.
 

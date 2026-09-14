@@ -13,9 +13,10 @@ Computes trailing return per trust and ranks them. Does not clean/adjust the und
 An `overall_rank` and `is_top20` flag, ultimately landing on `gold.dim_financial_instrument`, but computed here in Silver as an intermediate result.
 
 ## Transformation / business rules
-1. Compute trailing 15-year total return per trust (dividend-inclusive).
-2. Rank trusts by that return using a window function: `rank() over (order by trailing_return desc)`.
-3. Flag the top 20 as `is_top20 = true`.
+1. **Filter to `is_active = true` first.** `bronze.trust_universe_raw` includes trusts that have since been delisted, wound up, or merged away — their price history simply stops on whatever date that happened, so an unfiltered "15-year return" for one of them is meaningless, not just noisy. Ranking must never consider an inactive trust.
+2. Compute trailing 15-year total return per trust (dividend-inclusive), for whatever trusts remain after that filter.
+3. Rank trusts by that return using a window function: `rank() over (order by trailing_return desc)`.
+4. Flag the top 20 as `is_top20 = true`.
 4. This selection is a one-time snapshot decision for the project, not something that needs to be recomputed on every scheduled pipeline run — but the query itself should still be written idempotently (same inputs → same ranking) in case it is re-run.
 
 ## Idempotency
