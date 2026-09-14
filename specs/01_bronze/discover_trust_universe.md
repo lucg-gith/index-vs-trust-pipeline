@@ -4,33 +4,27 @@
 Build the starting list of UK investment trusts to evaluate, without relying on any external "best of" ranking, so the eventual top-20 selection is something the pipeline computes itself rather than something curated by a third party.
 
 ## Single Responsibility
-Produces a reference list of trust names and their resolved LSE tickers. Does not download price history (that's `ingest_trust_prices`) and does not rank or filter by performance (that's `select_top20_trusts` in Silver).
+Loads a human-curated reference list of trust names and tickers into Bronze. Does not download price history (that's `ingest_trust_prices`) and does not rank or filter by performance (that's `select_top20_trusts` in Silver).
 
 ## Inputs
-- Wikipedia category page: "Investment trusts of the United Kingdom" (~123 trusts, freely reusable content)
-- Each trust's own Wikipedia infobox, for its ticker (most UK investment trust infoboxes list the LSE ticker directly)
+`data/trust_universe_seed.csv` — hand-curated, columns: `trust_name, ticker, aic_sector, source_url`.
+
+**Deliberately not automated:** an earlier version of this spec called for scraping ticker values out of Wikipedia infoboxes per trust. That was dropped — infobox formats aren't consistent trust-to-trust, so a scraper would be fragile, and this is a small (~123 rows), static, one-time list that doesn't justify the engineering cost of reliable automated parsing. The trust *names* came from Wikipedia's "Investment trusts of the United Kingdom" category (freely reusable content, pulled once); tickers and sectors are filled in by hand from the AIC's member directory (manual browsing only — their Terms of Use explicitly ban automated scraping) or a per-name search as a fallback.
 
 ## Outputs
-`bronze.trust_universe_raw` — grain: one row per trust.
-
-| column | type | notes |
-|---|---|---|
-| trust_name | string | as listed on the Wikipedia category page |
-| ticker | string | resolved LSE ticker, e.g. `SMT.L`; null if it couldn't be resolved automatically |
-| source_url | string | the Wikipedia page the ticker was resolved from, for traceability |
+`bronze.trust_universe_raw` — grain: one row per trust. Same four columns as the seed CSV, cast to string per the usual Bronze convention.
 
 ## Transformation / business rules
-1. Pull the full list of trust names from the Wikipedia category page.
-2. For each name, look up its own Wikipedia article and extract the ticker from the infobox where present.
-3. Do not hand-curate or filter this list by any performance/quality judgment — completeness here is what makes the later ranking-based selection defensible ("we computed the best 20, we didn't pick them").
-4. Any trust whose ticker can't be resolved automatically should be left with `ticker = null` rather than guessed — a human can fill gaps later, but the notebook itself should never invent a ticker.
+1. Read `data/trust_universe_seed.csv` as-is.
+2. Do not hand-curate or filter this list by any performance/quality judgment beyond what the source category already implied — completeness here is what makes the later ranking-based selection defensible ("we computed the best 20, we didn't pick them").
+3. A trust whose `ticker` is still blank in the CSV passes through as null — the notebook should never invent a ticker.
 
 ## Idempotency
-Full overwrite. This is a small, mostly-static reference list; re-running it should simply refresh the pull, not accumulate duplicates.
+Full overwrite. Re-running it just re-reads the current state of the seed CSV.
 
 ## Data quality checks
-- Confirm the total row count is in the expected range (~123); a large deviation suggests the category page structure changed.
-- Report the count of unresolved tickers explicitly (don't silently drop them) — this is a case where a human may need to fill in one or two by hand afterward.
+- Confirm the total row count matches the seed CSV (~123); a mismatch means a read/parse problem, not a source-side issue.
+- Report the count of blank tickers explicitly (don't silently drop them) — those rows need the manual lookup pass completed before `ingest_trust_prices` can use them.
 
 ## Open questions
-- Exact scraping/parsing approach for pulling Wikipedia infobox tickers reliably at scale isn't implemented yet.
+None — approach settled. Filling in the remaining ticker/sector values in the CSV is manual work in progress, not a design question.
