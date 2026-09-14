@@ -1,0 +1,14 @@
+# AI tooling / local dev environment config -- not project deliverables
+.agents/
+.aider-desk/
+.claude/
+skills-lock.json
+
+# Python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
