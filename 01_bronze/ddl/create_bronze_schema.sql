@@ -1,4 +1,3 @@
 -- Databricks notebook source
--- Bronze is schema-on-read: we don't define column types up front,
--- we just need somewhere for the raw ingested tables to live.
+-- Bronze: schema-on-read, no types defined up front.
 CREATE SCHEMA IF NOT EXISTS bronze;

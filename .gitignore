@@ -1,8 +1,17 @@
+# Secrets -- never commit real credentials
+.env
+
 # AI tooling / local dev environment config -- not project deliverables
 .agents/
 .aider-desk/
 .claude/
 skills-lock.json
+
+# Course material / assignment briefs -- context for AI, not a project deliverable
+docs/course-brief.md
+
+# Implementation specs -- working notes for building the pipeline, not a deliverable
+specs/
 
 # Python
 __pycache__/
