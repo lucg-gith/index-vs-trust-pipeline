@@ -32,7 +32,7 @@ This is the project's main analytical claim, and the main thing to defend.
 
 | Rubric level | Requirement | Status |
 |---|---|---|
-| **Mínimo** | Bronze → Silver → Gold, at least 2 tables | on track |
+| **Minimum** | Bronze → Silver → Gold, at least 2 tables | on track |
 | **Ideal** | plus MERGE, SCD Type 2, validations, automated workflow | on track — all four in scope |
 | **Bonus** | plus dashboard, full documentation, video | dashboard and README in scope; video is step 9 |
 
@@ -48,8 +48,8 @@ This is the project's main analytical claim, and the main thing to defend.
 
 - **Defensible beats clever.** This is presented live in 5–10 minutes and questioned. A
   design that cannot be explained under pressure is worth less than a simpler one that can.
-- **Time is the scarcest resource.** The brief says it outright: *"No intentes hacer todo.
-  Es mejor un pipeline simple bien hecho que uno complejo a medias."*
+- **Time is the scarcest resource.** The brief says it outright: *"Don't try to do
+  everything. A simple pipeline done well beats a complex one done halfway."*
 - The employer is **never named** anywhere in the repo, commits or deliverables.
 
 ---

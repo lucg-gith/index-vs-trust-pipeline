@@ -5,8 +5,8 @@ Everything needed for the 5–10 minute defence, in the order the brief asks for
 
 **Last updated:** 2026-09-18
 
-> Written in English as our working language. If the defence is in Spanish, say so and this
-> gets translated — the section headings below already mirror the brief's Spanish structure.
+> The course material is in Spanish; everything here is in English. Where this document
+> quotes the brief, the quote is translated.
 
 ---
 
@@ -23,7 +23,7 @@ Memorise this. It is the answer to "so what did you build?" and it opens the tal
 
 ---
 
-## 1. Problema — 1 minute
+## 1. The problem — 1 minute
 
 **The question:** what % of UK investment trusts beat the S&P 500?
 
@@ -41,7 +41,7 @@ the market. This measures whether that promise holds, at scale, over 15 years.
 
 ---
 
-## 2. Arquitectura — 2 minutes
+## 2. Architecture — 2 minutes
 
 ### Data sources — three of them
 
@@ -97,7 +97,7 @@ Python + `yfinance` for ingestion · Git / GitHub
 
 ---
 
-## 3. Demo en vivo — 3 minutes
+## 3. Live demo — 3 minutes
 
 **Rehearse this. Have the tabs open before you start. Do not improvise.**
 
@@ -146,7 +146,7 @@ trusts — and name the gap.
 
 ---
 
-## 4. Resultados — 2 minutes
+## 4. Results — 2 minutes
 
 ### ⚠️ TO FILL IN once Gold runs
 
@@ -180,25 +180,25 @@ These matter as much as the numbers — the brief explicitly grades reasoning.
 
 ---
 
-## 5. Preguntas — the defence bank
+## 5. Questions — the defence bank
 
 The brief lists five questions it expects. All five, plus the ones this design invites:
 
 | Question | Answer |
 |---|---|
-| **¿Por qué elegiste ese modelo dimensional?** | Two dims, two facts, every dimension joins straight to the fact — a true star. Trusts and the index sit in one dimension, so comparing them is a self-join instead of a union. |
-| **¿Qué pasa si la fuente cambia de schema?** | Bronze lists every column explicitly rather than `SELECT *`, so a new or missing column surfaces as an error, not a silent change. The index notebook also compares the live column list against the expected one before it builds. |
-| **¿Cómo garantizás que no se duplican datos?** | OVERWRITE into Landing and Bronze, MERGE on the business key into Silver and Gold. Re-running changes no row counts. |
-| **¿Qué harías diferente con más tiempo?** | Source real manager history so the SCD2 has depth on day one instead of accruing forward, and get dividend data so I could compare total returns rather than price returns. |
-| **¿Cómo escalarías a 10x más datos?** | Partition the facts by year, and switch Landing and Bronze from full OVERWRITE to incremental loads with Auto Loader. Silver and Gold already MERGE, so they scale as-is. |
+| **Why did you choose that dimensional model?** | Two dims, two facts, every dimension joins straight to the fact — a true star. Trusts and the index sit in one dimension, so comparing them is a self-join instead of a union. |
+| **What happens if the source changes its schema?** | Bronze lists every column explicitly rather than `SELECT *`, so a new or missing column surfaces as an error, not a silent change. The index notebook also compares the live column list against the expected one before it builds. |
+| **How do you guarantee data is not duplicated?** | OVERWRITE into Landing and Bronze, MERGE on the business key into Silver and Gold. Re-running changes no row counts. |
+| **What would you do differently with more time?** | Source real manager history so the SCD2 has depth on day one instead of accruing forward, and get dividend data so I could compare total returns rather than price returns. |
+| **How would you scale this to 10x more data?** | Partition the facts by year, and switch Landing and Bronze from full OVERWRITE to incremental loads with Auto Loader. Silver and Gold already MERGE, so they scale as-is. |
 | **Why a Landing *and* a Bronze?** | Landing is a transient receiving zone holding exactly what arrived. Bronze is the permanent record under one uniform all-STRING contract. Different jobs, different lifespans. |
 | **Show me your SCD2** | Demo beat #4 — change a manager, re-run, two rows. |
 | **Why is `month_key` not a hash like the other keys?** | It is a plain `YYYYMM` integer. It is readable in query output and sorts chronologically for free — a hash would give up both for no benefit. |
 | **Why price return and not total return?** | The trust data has no dividend column, so I discard the index's dividends too. Comparing a dividend-inclusive index against price-only trusts would be rigged against the trusts. |
 | **Why keep trusts that fail your minimum history?** | They stay in the dimension so the universe stays honest, but they produce no fact rows and count in no denominator. |
 
-**If you do not know an answer, say so.** The brief says this directly: *"No tengas miedo de
-decir 'no sé'. Lo que importa es tu razonamiento."*
+**If you do not know an answer, say so.** The brief says this directly: *"Don't be afraid to
+say 'I don't know'. What matters is your reasoning."*
 
 ---
 
@@ -250,6 +250,6 @@ Volunteering a weakness reads as rigour. Being caught hiding one does the opposi
 ### The personal angle
 
 The brief is explicit that the background is an advantage, not a gap to apologise for:
-*"Un ex-contador entiende el negocio. Un ex-docente comunica mejor."* Career-changing into
-data from a non-technical field means you chose a question you actually care about and can
-explain to a non-technical audience — which is exactly what the beat rate is.
+*"A former accountant understands the business. A former teacher communicates better."*
+Career-changing into data from a non-technical field means you chose a question you actually
+care about and can explain to a non-technical audience — which is exactly what the beat rate is.
