@@ -56,8 +56,8 @@ print(f"wrote {TABLE}")
 # MAGIC %sql
 # MAGIC SELECT COUNT(*) AS row_count,
 # MAGIC        COUNT(DISTINCT ticker) AS distinct_tickers,
-# MAGIC        MIN(date) AS first_date,
-# MAGIC        MAX(date) AS last_date
+# MAGIC        MIN(`date`) AS first_date,
+# MAGIC        MAX(`date`) AS last_date
 # MAGIC FROM `index-vs-trust-pipeline`.landing.trust_prices_raw;
 
 # COMMAND ----------
@@ -69,6 +69,6 @@ print(f"wrote {TABLE}")
 
 # MAGIC %sql
 # MAGIC -- The known-bad row must still be bad. This proves Landing cleaned nothing.
-# MAGIC SELECT ticker, date, price_gbx_or_gbp
+# MAGIC SELECT ticker, `date`, price_gbx_or_gbp
 # MAGIC FROM `index-vs-trust-pipeline`.landing.trust_prices_raw
-# MAGIC WHERE ticker = 'PCFT' AND date = '2019-11-01';
+# MAGIC WHERE ticker = 'PCFT' AND `date` = '2019-11-01';
