@@ -1,4 +1,19 @@
 # Databricks notebook source
+# MAGIC %md
+# MAGIC # Landing — S&P 500 tracker prices
+# MAGIC
+# MAGIC Source: Yahoo Finance via the `yfinance` library — not an official API, but the
+# MAGIC established free way to read the same data Yahoo's site shows.
+# MAGIC
+# MAGIC Four tickers, all tracking the S&P 500 in different wrappers. **SPY is the
+# MAGIC benchmark** used in every calculation (its history goes back to 1993); the other
+# MAGIC three exist only for a secondary "these trackers should overlap" credibility chart.
+# MAGIC
+# MAGIC Lands **daily**, as it arrives. Collapsing to monthly is a business rule and belongs
+# MAGIC in Silver.
+
+# COMMAND ----------
+
 # MAGIC %pip install yfinance
 
 # COMMAND ----------
@@ -7,48 +22,71 @@ dbutils.library.restartPython()
 
 # COMMAND ----------
 
-# yfinance is a Python library that fetches historical stock/ETF market data
-# for free, by reading the same data Yahoo Finance's own website shows --
-# it's not an official Yahoo API, just a well-established community tool for this
+import pandas as pd
 import yfinance as yf
 
-# The 4 tickers, all of which track the S&P 500 index in slightly
-# different wrappers (different provider, fee, inception date). SPY is the
-# primary benchmark (history back to 1993)
-index_tickers = ["SPY", "IVV", "VOO", "SPLG"]
+CATALOG = "`index-vs-trust-pipeline`"
+TABLE = f"{CATALOG}.landing.index_prices_raw"
 
-for ticker in index_tickers:
-    print(f"Downloading {ticker}...")
+INDEX_TICKERS = ["SPY", "IVV", "VOO", "SPLG"]
 
-    # Ask yfinance for this ticker's full history.
-    t = yf.Ticker(ticker)
+# COMMAND ----------
 
-    # .history() actually pulls the data:
-    #   period="15y"        -> go back 15 years from today
-    #   auto_adjust=False    -> keep the raw Close separate from a dividend/split-adjusted
-    #                           version.
-    #   actions=True         -> include Dividends / Stock Splits / Capital Gains columns
-    hist = t.history(period="15y", auto_adjust=False, actions=True)
+pulls = []
 
-    # yfinance puts the date in the table's index (its row label).
-    # reset_index() turns that back into a real "Date" column.
+for ticker in INDEX_TICKERS:
+    print(f"downloading {ticker}...")
+
+    # auto_adjust=False keeps the raw Close separate from the adjusted one -- we need the
+    # raw Close, because the trust data has no dividends to match against.
+    hist = yf.Ticker(ticker).history(period="15y", auto_adjust=False, actions=True)
+
+    # yfinance puts the date in the row label, not a column.
     hist = hist.reset_index()
 
-    # yfinance's columns include "Adj Close", "Stock Splits", "Capital Gains" -- all
-    # have spaces -- so this replaces every space with an underscore.
+    # Columns like "Adj Close" and "Stock Splits" have spaces, which Delta dislikes.
     hist.columns = [c.replace(" ", "_") for c in hist.columns]
 
-    # yfinance timestamps carry US market timezone info (e.g. America/New_York).
-    # Spark can't convert timezone-aware pandas timestamps cleanly, so we strip it,
-    # keeping just the plain calendar date.
+    # Timestamps carry a US market timezone that Spark can't convert cleanly.
     hist["Date"] = hist["Date"].dt.tz_localize(None)
 
-    print(f"  -> got {len(hist)} rows for {ticker}")
+    # The response never says which ETF it is, so without this column the rows are
+    # unusable. Identification, not transformation.
+    hist.insert(0, "ticker", ticker)
 
-    # Landing keeps each ticker's pull separate 
-    ticker_sdf = spark.createDataFrame(hist)
-    ticker_sdf.show(3)
+    print(f"  -> {len(hist)} rows")
+    pulls.append(hist)
 
-    table_name = f"landing.index_prices_raw_{ticker.lower()}"
-    ticker_sdf.write.format("delta").mode("overwrite").saveAsTable(table_name)
-    print(f"  -> wrote {table_name}")
+index_prices = pd.concat(pulls, ignore_index=True)
+print(f"total {len(index_prices)} rows")
+index_prices.head(3)
+
+# COMMAND ----------
+
+sdf = spark.createDataFrame(index_prices)
+sdf.write.format("delta").mode("overwrite").saveAsTable(TABLE)
+
+print(f"wrote {TABLE}")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Verification
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC SELECT ticker,
+# MAGIC        COUNT(*) AS row_count,
+# MAGIC        MIN(Date) AS first_date,
+# MAGIC        MAX(Date) AS last_date
+# MAGIC FROM `index-vs-trust-pipeline`.landing.index_prices_raw
+# MAGIC GROUP BY ticker
+# MAGIC ORDER BY ticker;
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC Expect **4 tickers**, roughly 3,700-3,800 daily rows each, starting around 2011.
+# MAGIC VOO launched Sept 2010 and SPLG's history is shorter, so their counts may differ —
+# MAGIC that is the data, not a bug.

@@ -21,3 +21,6 @@ __pycache__/
 # OS
 .DS_Store
 Thumbs.db
+
+# AI assistant guidance -- not a project deliverable
+CLAUDE.md
