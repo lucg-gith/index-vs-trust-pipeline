@@ -1,6 +1,6 @@
 # PRD — Do UK investment trusts beat the S&P 500?
 
-**Last updated:** 2026-09-18
+**Last updated:** 2026-09-19
 **Current position:** Step 3 of 9 — EDA. Steps 1–2 are written but **not yet verified on Databricks**.
 
 ---
