@@ -105,7 +105,8 @@ Known defects, all of which must reach Silver intact:
 
 ### Yahoo Finance via `yfinance` — the index
 
-SPY, IVV, VOO, SPLG. Daily. Has dividends and adjusted close, both deliberately unused.
+SPY, IVV, VOO, SPLG requested; full history each. Daily. Has dividends and adjusted close,
+both deliberately unused. SPLG returns no data from Yahoo, so only three land.
 
 ### Superseded
 

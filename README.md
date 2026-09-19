@@ -53,7 +53,7 @@ A diagram of the model is in [docs/star-schema.html](docs/star-schema.html).
 |---|---|
 | `data/uk_investment_trusts.csv` | Trust metadata — name, ticker, AIC sector, manager, management group. 120 rows, 118 tickers. |
 | `data/uk_investment_trusts_price_history_monthly.csv` | Monthly prices, 16,357 rows across 102 tickers, 2011-09 to 2026-09. |
-| Yahoo Finance via `yfinance` | The index side — SPY, with IVV/VOO/SPLG as a credibility check. |
+| Yahoo Finance via `yfinance` | The index side — SPY, with IVV/VOO as a credibility check. Full daily history. SPLG is requested but Yahoo no longer serves it. |
 
 ### An honest caveat about returns
 
