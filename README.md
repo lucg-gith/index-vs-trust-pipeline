@@ -85,7 +85,7 @@ docs/           the PRD and the star-schema diagram
 
 ## How to run
 
-The `.py` files are Databricks notebooks. Clone the repository into a Databricks Git folder
+The `.ipynb` files are Databricks notebooks. Clone the repository into a Databricks Git folder
 and run the layers in order — Landing, Bronze, Silver, Gold, Semantic — or attach them to a
 single Workflow and run that. Every notebook ends with a verification cell whose expected
 answer is known in advance.
