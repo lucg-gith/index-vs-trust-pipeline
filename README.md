@@ -3,7 +3,7 @@
 A five-layer Databricks pipeline that measures the **beat rate**: the percentage of UK
 investment trusts that outperformed the S&P 500 over a given window.
 
-Not "which trust won" — the share that won. If 31 of 102 trusts beat the index over ten
+Not "which trust won" — the share that won. If 30 of 98 trusts beat the index over ten
 years, the beat rate is 30%.
 
 > **Status: in progress.** The pipeline is being built one layer at a time. Results below
@@ -17,8 +17,18 @@ each horizon**: once including trusts that were delisted, once excluding them.
 
 Funds that collapse stop being counted. Measure only the survivors and the industry looks
 better than it was — **survivorship bias**. Most published comparisons disclaim it in a
-footnote. Reporting both numbers turns the bias into a measured quantity: the gap between
-the two *is* the bias, in percentage points.
+footnote.
+
+This project catches it happening. Of the 118 trusts in the universe, **Yahoo Finance
+returns no data at all for 16** — ask it for `BCPT` or `CSH` and it answers
+`No data found, symbol may be delisted`. The companies have been deleted from the source,
+which is exactly how the bias is created. The pipeline records every one of those refusals
+in `landing.yf_pull_log_raw` rather than letting them vanish.
+
+Two of the deleted trusts survive in an archived CSV, so the beat rate can be computed with
+and without them. **Two is a small cohort and the gap between the two numbers will be
+small** — the point is the mechanism and the fact that the pipeline detects it, not a
+precise estimate of the effect.
 
 ## Architecture
 
@@ -28,7 +38,7 @@ Catalog `index-vs-trust-pipeline` on Databricks Unity Catalog, five schemas:
 |---|---|---|
 | `landing` | data exactly as the source sent it — no transformation of any kind | OVERWRITE |
 | `bronze` | same rows, every column STRING, nothing rejected | OVERWRITE |
-| `silver` | all quality work — month keys, scale repair, monthly returns | MERGE |
+| `silver` | all quality work — currency, stub rejection, total return | MERGE |
 | `gold` | dimensional model, SCD Type 2 built via MERGE | MERGE |
 | `semantic` | thin views feeding the dashboard | views |
 
@@ -51,23 +61,36 @@ A diagram of the model is in [docs/star-schema.html](docs/star-schema.html).
 
 | Source | What it gives |
 |---|---|
-| `data/uk_investment_trusts.csv` | Trust metadata — name, ticker, AIC sector, manager, management group. 120 rows, 118 tickers. |
-| `data/uk_investment_trusts_price_history_monthly.csv` | Monthly prices, 16,357 rows across 102 tickers, 2011-09 to 2026-09. |
-| Yahoo Finance via `yfinance` | The index side — SPY, with IVV/VOO as a credibility check. Full daily history. SPLG is requested but Yahoo no longer serves it. |
+| Yahoo Finance via `yfinance` | **All prices, both sides.** Monthly bars, full history, with dividends. 102 of 118 trust tickers return data; 75 of them reach back 15 years or more. SPY from 1993, plus IVV and VOO as a credibility check. SPLG is requested but Yahoo no longer serves it. |
+| `data/uk_investment_trusts.csv` | Trust metadata — name, ticker, AIC sector, manager, management group. 120 rows, 118 tickers. Also defines the universe the Yahoo pull requests. |
+| `data/uk_investment_trusts_price_history_monthly.csv` | An archive of the two delisted trusts Yahoo has erased, `BCPT` and `CSH`. Landed in full, but only those two are used. |
 
-### An honest caveat about returns
+### How returns are measured
 
-**Returns are price return on both sides.** The trust price history carries no dividend or
-total-return column, so the only fair comparison is price against price — which means the
-index side uses SPY's `Close`, never `Adj_Close`. Both sides are therefore understated by
-roughly their dividend yield, and the beat rate is a price-return beat rate.
+**Total return on both sides** — price movement plus dividends, compounded, computed with
+one formula applied identically to the trusts and to SPY:
 
-### Known defects in the source data, all handled in Silver
+```
+monthly return = (Close_t + Dividends_t) / Close_(t-1) − 1
+```
 
-- Date labels mix month-end with next-month-first — 31 December can appear as 1 January.
-- Around 25 tickers carry interleaved rows on the wrong scale, and the factor **drifts
-  within a single ticker**, so no global correction exists.
-- One zero price, and 145 sub-1.0 prices that are currency-quoted rather than wrong.
+This matters more than it sounds. UK investment trusts yield roughly 3–5% a year against
+SPY's 1.3%, so comparing on price alone would hand the index a systematic head start of
+several points a year and understate the beat rate.
+
+**Yahoo's `Adj_Close` is deliberately not used.** It is dividend-adjusted for SPY, but for
+UK trusts Yahoo records the dividend events and never applies them — 97 of 102 trusts show
+an adjustment of under 0.5%. `HFEL` is the clearest case: 40 dividends totalling 232.6p
+against a 359p starting price, yet an `Adj_Close` adjustment of 0.8%. Over ten years its
+price return is **−25.8%** and its total return is **+39.0%**. Silver therefore builds
+total return from `Close` and `Dividends` rather than trusting the adjusted column.
+
+### Other things stated openly
+
+- **No currency conversion.** Trusts are compared in GBp and SPY in USD, as percentage
+  returns. Converting would import GBP/USD movement into a question about fund performance.
+- Yahoo quotes 3 trusts in USD and 1 in EUR rather than GBp; Silver normalises the scale.
+- 6 tickers return under 3 years of history and are rejected as stubs.
 
 Every cleaning rule is backed by evidence in the EDA notebook rather than asserted.
 
@@ -76,7 +99,7 @@ Every cleaning rule is backed by evidence in the EDA notebook rather than assert
 ```
 00_landing/     ingest notebooks and schema DDL
 01_bronze/      all-STRING recast, plus the EDA that justifies Silver's rules
-02_silver/      cleaning, scale repair, monthly returns
+02_silver/      currency normalisation, stub rejection, total return
 03_gold/        dimensions and facts
 04_semantic/    views for the dashboard
 data/           the committed source CSVs
