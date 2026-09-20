@@ -3,7 +3,7 @@
 **Last updated:** 2026-09-20
 **Current position:** Step 8 of 9 — orchestration. **Step 7 is complete:** the five semantic
 views and the dashboard are both built and verified. The dashboard is a Databricks AI/BI page
-created through the Lakeview REST API and published — one page, eight tiles, five datasets,
+created through the Lakeview REST API and published — one page, seven tiles, five datasets,
 its definition version-controlled at `04_semantic/dashboard/beat_rate.lvdash.json`. A Power BI
 build sheet in the same folder reproduces it by hand, because the Power BI REST API cannot
 author report visuals. **Gold is complete and
@@ -286,7 +286,7 @@ Specs live in `specs/<layer>/` and are gitignored — working notes, not deliver
 | 5 | **Gold dims** — `dim_date`, `dim_ticker` SCD2 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 6 | **Gold facts** — monthly plus horizon, return + risk | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 7a | **Semantic** — five thin views over Gold | ✅ | ✅ | ✅ | ✅ | ✅ |
-| 7b | **Dashboard** — one page, eight tiles | ✅ | ✅ | ✅ | ✅ | ✅ |
+| 7b | **Dashboard** — one page, seven tiles | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 8 | **Orchestration** — one monthly Workflow | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 9 | **Presentation** — README, video, LinkedIn | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
@@ -416,8 +416,9 @@ same span, and **volatility plus risk-adjusted return** aggregated over each win
 
 **Step 7 — Semantic and dashboard** *(done)*
 Five thin views over Gold, then one AI/BI dashboard page over two of them. Dashboard scope was
-cut from four pages to eight tiles on 2026-09-20: four counters, beat rate by horizon, a
-risk-against-reward scatter, the survivorship pair, and a top-ten table naming the managers.
+cut from four pages to seven tiles on 2026-09-20: three counters (return, growth, income),
+beat rate by horizon, beat rate by management group, the survivorship pair, and a top-20 table
+naming the managers with the index ranked into it.
 Three counters, one per question: over 15 years 5.3% beat the index on total return, 5.3%
 out-grew it on price alone, and 52.6% paid more income than it. At 5 years the first two split
 — 15.6% against 8.9% — which is the dividends doing the work. **Volatility was removed from the
