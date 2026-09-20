@@ -42,11 +42,27 @@
       "name": "risk_reward",
       "displayName": "Every ticker, risk against reward",
       "queryLines": [
-        "-- Both axes annualised, so the ratio between them is the risk-adjusted return.\n",
-        "SELECT ticker, name, entity_type, management_group, manager,\n",
-        "       volatility_pct, annualised_return_pct, total_return_pct, beat_index\n",
-        "FROM `index-vs-trust-pipeline`.semantic.v_leaderboard\n",
-        "WHERE horizon_years = :horizon"
+        "-- One dot per trust, plus SPY. IVV and VOO are dropped: they sit on the same point as SPY\n",
+        "-- and rendered as a single dot, which misrepresents how many trackers are on the chart.\n",
+        "WITH spy AS (\n",
+        "  SELECT horizon_years, volatility_pct AS spy_vol, annualised_return_pct AS spy_ret\n",
+        "  FROM `index-vs-trust-pipeline`.semantic.v_leaderboard\n",
+        "  WHERE ticker = 'SPY'\n",
+        ")\n",
+        "SELECT l.ticker, l.name, l.management_group, l.manager,\n",
+        "       l.volatility_pct, l.annualised_return_pct, l.beat_index,\n",
+        "       -- The legend does the explaining, so the chart needs no quadrant lines.\n",
+        "       CASE WHEN l.entity_type = 'Index'                    THEN 'The S&P 500'\n",
+        "            WHEN l.annualised_return_pct > s.spy_ret\n",
+        "             AND l.volatility_pct       < s.spy_vol         THEN 'Beat it, and calmer'\n",
+        "            WHEN l.annualised_return_pct > s.spy_ret         THEN 'Beat it, but bumpier'\n",
+        "            WHEN l.volatility_pct       < s.spy_vol         THEN 'Lost to it, but calmer'\n",
+        "            ELSE 'Lost to it, and bumpier'\n",
+        "       END AS outcome\n",
+        "FROM `index-vs-trust-pipeline`.semantic.v_leaderboard l\n",
+        "JOIN spy s ON s.horizon_years = l.horizon_years\n",
+        "WHERE l.horizon_years = :horizon\n",
+        "  AND (l.entity_type = 'Trust' OR l.ticker = 'SPY')"
       ],
       "parameters": [
         {
@@ -449,6 +465,18 @@
                   "datasetName": "risk_reward",
                   "fields": [
                     {
+                      "name": "ticker",
+                      "expression": "`ticker`"
+                    },
+                    {
+                      "name": "name",
+                      "expression": "`name`"
+                    },
+                    {
+                      "name": "management_group",
+                      "expression": "`management_group`"
+                    },
+                    {
                       "name": "volatility_pct",
                       "expression": "`volatility_pct`"
                     },
@@ -457,20 +485,8 @@
                       "expression": "`annualised_return_pct`"
                     },
                     {
-                      "name": "entity_type",
-                      "expression": "`entity_type`"
-                    },
-                    {
-                      "name": "name",
-                      "expression": "`name`"
-                    },
-                    {
-                      "name": "ticker",
-                      "expression": "`ticker`"
-                    },
-                    {
-                      "name": "management_group",
-                      "expression": "`management_group`"
+                      "name": "outcome",
+                      "expression": "`outcome`"
                     }
                   ],
                   "disaggregated": true
@@ -506,15 +522,15 @@
                   "displayName": "Annualised return %"
                 },
                 "color": {
-                  "fieldName": "entity_type",
+                  "fieldName": "outcome",
                   "scale": {
                     "type": "categorical"
                   },
                   "legend": {
                     "hide": false,
-                    "title": "Type"
+                    "title": "How it did"
                   },
-                  "displayName": "Type"
+                  "displayName": "How it did"
                 },
                 "extra": [
                   {
@@ -535,7 +551,7 @@
                 "showTitle": true,
                 "title": "Risk against reward",
                 "showDescription": true,
-                "description": "Both axes are annualised, so the ratio between them is the risk-adjusted return. Above and to the left of the index is better on both counts. At 15 and 10 years no trust is there at all"
+                "description": "Each dot is one trust: how much it bounced (across) against what it returned a year (up). At 15 and 10 years nothing both beat the index and was calmer"
               }
             }
           },
