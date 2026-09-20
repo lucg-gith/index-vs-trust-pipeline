@@ -1,9 +1,10 @@
 # PRD — Do UK investment trusts beat the S&P 500?
 
 **Last updated:** 2026-09-20
-**Current position:** Step 4 of 9 — Silver. **Spec approved and the three notebooks are
-built**; verification on Databricks is the outstanding item. Landing, Bronze and EDA are all
-**verified** on Databricks as of 2026-09-20.
+**Current position:** Step 5 of 9 — Gold dimensions. **Silver is verified** on Databricks as
+of 2026-09-20: three notebooks ran green on the first attempt, 16,770 rows across 104
+tickers, and every expected number matched bar one (see below). Landing, Bronze and EDA are
+all verified too.
 
 Writing the Silver spec re-derived the scale-repair evidence against the warehouse and
 **overturned two EDA claims**: the corrupt prices are not clean powers of ten, and the true
@@ -269,7 +270,7 @@ Specs live in `specs/<layer>/` and are gitignored — working notes, not deliver
 | 1 | **Landing** — 4 ingests plus schema | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 2 | **Bronze** — all-STRING recast | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 3 | **EDA** — evidence for Silver's rules | ✅ | ✅ | ✅ | ✅ | ✅ |
-| 4 | **Silver** — scale repair, currency, total return | ✅ | ✅ | ✅ | ✅ | 🔵 |
+| 4 | **Silver** — scale repair, currency, total return | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 5 | **Gold dims** — `dim_date`, `dim_ticker` SCD2 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 6 | **Gold facts** — monthly plus horizon, return + risk | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 7 | **Semantic plus dashboard** | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
@@ -288,6 +289,15 @@ Specs live in `specs/<layer>/` and are gitignored — working notes, not deliver
   2011-08 onward**, because nothing older is read by any metric and the pre-2011 data is
   12.4% corrupt against 0.67% inside the window — this shrinks `dim_date` from ~710 rows to
   ~181 and is a change to a previously agreed design point.
+- **Silver ran green first time**, 2026-09-20. `silver.monthly_performance` holds **16,770
+  rows across 104 tickers** (99 Yahoo trusts, 2 archive, 3 index), `silver.ticker` holds
+  **121**, and `silver.price_repair_log` holds **490** — 381 repaired, 109 deleted. The two
+  integrity checks both returned **0**: no non-positive close, and nothing left more than 2x
+  from its neighbourhood median. `PCFT` 2019-11 came back as 141.25 from a recorded 0.0,
+  `JEMA` 2022-12 as 84.877 from 42.87, and `CSH`'s maximum close fell from 112.8 to 2.945.
+- **One prediction was wrong and the data was right:** distinct `management_group` is **53**,
+  not 52, because 19 trusts carry an empty string rather than a null. The 52 real groups are
+  intact. Whether to normalise `''` to null is **open for Gold**, where the column is used.
 - **Rule S2b was added during the build**, because the spec's own verification cell failed on
   its first dry run. It found `JEMA` 2022-12 — `low 79.75, high 90.00, close 42.87` — corrupt
   but off by almost exactly 2x, so the neighbourhood test let it through. Detecting a close
@@ -364,7 +374,7 @@ status derived, MERGE on the business key.
 
 S3 is a change to a previously agreed design point — see `dim_date` above.
 
-**Step 5 — Gold dimensions**
+**Step 5 — Gold dimensions** *(next)*
 `dim_date` (~181 rows, 2011-08 onward) and `dim_ticker` with the SCD2 MERGE closing and
 opening version rows.
 
