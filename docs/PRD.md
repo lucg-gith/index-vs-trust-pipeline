@@ -272,7 +272,7 @@ Specs live in `specs/<layer>/` and are gitignored — working notes, not deliver
 | 3 | **EDA** — evidence for Silver's rules | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 4 | **Silver** — scale repair, currency, total return | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 5 | **Gold dims** — `dim_date`, `dim_ticker` SCD2 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| 6 | **Gold facts** — monthly plus horizon, return + risk | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| 6 | **Gold facts** — monthly plus horizon, return + risk | ✅ | ✅ | 🔵 | ⬜ | ⬜ |
 | 7 | **Semantic plus dashboard** | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 8 | **Orchestration** — one monthly Workflow | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 9 | **Presentation** — README, video, LinkedIn | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
