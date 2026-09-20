@@ -1,10 +1,10 @@
 # PRD — Do UK investment trusts beat the S&P 500?
 
-**Last updated:** 2026-09-19
-**Current position:** Step 2 of 9 — Bronze, starting from scratch. The price source changed
-on 2026-09-19 from the CSV to Yahoo Finance, which adds dividends and deeper history.
-Landing was rewritten against that; **Bronze was deleted the same day and is being redone.**
-No pipeline table exists on Databricks yet — only the empty `landing` schema.
+**Last updated:** 2026-09-20
+**Current position:** Step 2 of 9 — Bronze, starting from scratch. **Landing is verified:**
+all five notebooks ran green on Databricks on 2026-09-20 and every check matches. The price
+source changed on 2026-09-19 from the CSV to Yahoo Finance, which adds dividends and history
+back to 1967. Bronze was deleted the same day and is being redone against the new Landing.
 
 ---
 
@@ -28,7 +28,7 @@ Reporting both numbers turns the bias into a measured quantity: the gap between 
 **Reframed 2026-09-19, and this is the honest version.** The project demonstrates the
 *mechanism* rather than sizing the effect. Two things support it:
 
-- **Yahoo Finance has deleted 16 of the 118 trusts** in the universe. Ask it for `BCPT` or
+- **Yahoo Finance has deleted 18 of the 118 trusts** in the universe. Ask it for `BCPT` or
   `CSH` and it answers `No data found, symbol may be delisted`. That deletion, recorded
   row by row in `landing.yf_pull_log_raw`, *is* survivorship bias happening in a live data
   source — not a caveat, but something the pipeline catches in the act.
@@ -131,15 +131,15 @@ Requested monthly, full available history, `auto_adjust=False, actions=True` so 
 | Outcome | Count |
 |---|---|
 | Usable series | **96** |
-| Stub under 3 years, unusable | 6 — ADIG, APAX, BSIF, EOT, HET, MNTN |
+| Stub under 3 years, unusable | 4 — ADIG, BSIF, EOT, MNTN |
 | No data at all | 16 |
 
 The 16: `ABR ACI ADD AIS ASIT BCPT CDI CSH ECWO FJV PLI PRSR SCIN SSON THRB UKCM`.
 Re-probed to rule out rate limiting; Yahoo's LSE coverage simply does not reach them.
-Dividends are present for 89 of the 102 that return anything. Currencies are mixed:
-**98 GBp, 3 USD, 1 EUR**.
+Dividends are present for 90 of the 100 that return anything. Currencies are mixed:
+**96 GBp, 3 USD, 1 EUR**.
 
-**Index — SPY 405 monthly bars from 1993-02, IVV 317 from 2000-06, VOO 193 from 2010-10.
+**Index — SPY 405 monthly bars from 1993-01, IVV 317 from 2000-05, VOO 193 from 2010-09.
 SPLG returns nothing.**
 
 ### `data/uk_investment_trusts_price_history_monthly.csv` — the delisted archive
@@ -156,7 +156,7 @@ Yahoo: the mixed month-end date labels, the ~25 mis-scaled tickers, and the `PCF
 
 ### `landing.yf_pull_log_raw` — the pull log
 
-One row per symbol requested, including the ones that returned nothing: 122 rows, 17 of
+One row per symbol requested, including the ones that returned nothing: 122 rows, 19 of
 them `NODATA`. A refused symbol produces no price rows and would otherwise vanish without
 trace. This table is the pipeline recording its own coverage gaps, and it is the evidence
 behind the survivorship argument.
@@ -201,7 +201,7 @@ dim_ticker (SCD2) ──┤     fact_horizon_performance
   **A new version row opens when `manager`, `management_group` or `status` changes.**
   SPY never versions.
 - **`dim_date`** — monthly, `month_key` a plain `YYYYMM` INT, not a hash: readable in
-  output and sorts naturally. **Now spans 1993-02 to the current month (~404 rows), not the
+  output and sorts naturally. **Now spans 1967-12 to the current month (~710 rows), not the
   181 the CSV implied** — SPY reaches back to 1993 and 75 trusts to 2011 or earlier.
 - **`fact_monthly_performance`** — one row per (ticker, month). Carries the **versioned**
   `ticker_key`, resolved once at build time, so "returns while managed by X" is a plain
@@ -237,7 +237,7 @@ Specs live in `specs/<layer>/` and are gitignored — working notes, not deliver
 | # | Step | Plan | Spec | Agreed | Built | Verified |
 |---|---|:--:|:--:|:--:|:--:|:--:|
 | 0 | **Design** — close the design tree | ✅ | ✅ | ✅ | ✅ | ✅ |
-| 1 | **Landing** — 4 ingests plus schema | ✅ | ✅ | ✅ | 🔵 | ⬜ |
+| 1 | **Landing** — 4 ingests plus schema | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 2 | **Bronze** — all-STRING recast | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 3 | **EDA** — evidence for Silver's rules | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 4 | **Silver** — currency, stubs, total return | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
@@ -249,23 +249,27 @@ Specs live in `specs/<layer>/` and are gitignored — working notes, not deliver
 
 ### Open at this moment
 
-- **Nothing has run on Databricks.** Verified against the REST API on 2026-09-19: the
-  `landing` schema exists but holds zero tables, and there is no `bronze` schema at all.
-  Landing is written and its expected numbers are checked against the sources, but
-  verification means a real execution, not a code review.
+- **Landing is verified.** Ran on Databricks 2026-09-20 as a five-task chained job, all
+  SUCCESS. Landed: 120 metadata rows, 16,357 CSV archive rows, 35,121 Yahoo trust rows
+  across 100 symbols, 915 index rows across 3, and 122 pull-log rows. Two spec numbers were
+  wrong and are corrected: `APAX` and `HET` return an empty frame rather than data, so it is
+  100 OK / 18 NODATA, not 102 / 16; and `yfinance` reaches far deeper than the chart API
+  suggested, back to **1967-12**, so the trust table is 35,121 rows rather than ~24,600.
+  The design conclusions are unchanged — 96 usable trusts, depth split 75 / 10 / 10 / 1.
 - **Bronze was deleted on 2026-09-19** and is being redone from scratch. All four notebooks
   targeted Landing tables that have since been renamed or replaced, so patching them was
   worth less than rebuilding. `specs/01_bronze/bronze.md` is marked SUPERSEDED and lists
   what the rewrite has to cover. The folder skeleton survives; only the notebooks are gone.
-- **The Databricks Git folder must be re-cloned** — a history rewrite on 2026-09-18 changed
-  every commit hash.
+- **The Databricks Git folder was re-cloned on 2026-09-20.** Its old copy had truncated
+  markdown cells and uncommitted run outputs, which blocked the pull; a clean clone fixed
+  both. It now tracks `main`.
 
 ### Step detail
 
 **Step 3 — EDA**
 Profile Bronze and produce the documented evidence behind every Silver rule. Against the
 Yahoo source that means: confirm the currency split and decide what happens to the 3 USD
-and 1 EUR trusts; show where the 6 stubs cut off and fix the minimum-history threshold;
+and 1 EUR trusts; show where the 4 stubs cut off and fix the minimum-history threshold;
 check the monthly bars for gaps and for the current partial month; and demonstrate that
 `Adj_Close` is unusable for UK trusts, which is what justifies building total return by
 hand. Output is a notebook in `01_bronze/eda/`.
@@ -277,7 +281,7 @@ to SPY, then the union with the two archived delisted trusts. MERGE on the busin
 Flat tables, no SCD2 here. Every rule cites step 3.
 
 **Step 5 — Gold dimensions**
-`dim_date` (~404 rows, 1993-02 onward) and `dim_ticker` with the SCD2 MERGE closing and
+`dim_date` (~710 rows, 1967-12 onward) and `dim_ticker` with the SCD2 MERGE closing and
 opening version rows.
 
 **Step 6 — Gold facts**
@@ -339,5 +343,5 @@ README (architecture diagram, how to run, results), 5–10 minute video, LinkedI
 | Why no lineage columns? | Delta's `DESCRIBE HISTORY` already records load time, user and notebook, and UC draws lineage. With OVERWRITE, a per-row stamp would repeat one value across every row. |
 | Why total return and not just price? | UK trusts yield 3–5% a year against SPY's 1.3%, so price-only comparison silently favours the index. I compute both sides the same way from `Close` plus `Dividends`. |
 | Why not use Yahoo's `Adj_Close`? | It is dividend-adjusted for SPY but not for UK trusts — 97 of 102 show an adjustment under 0.5%, including HFEL, which paid 232.6p on a 359p share. Using it would understate the trusts. |
-| How do you know delisted trusts are missing? | The pipeline records it. `landing.yf_pull_log_raw` holds a row per requested symbol, and 16 trusts come back `No data found, symbol may be delisted`. |
+| How do you know delisted trusts are missing? | The pipeline records it. `landing.yf_pull_log_raw` holds a row per requested symbol, and 18 trusts return nothing — 16 with `No data found, symbol may be delisted`, 2 with an empty frame. |
 | What would you do with more time? | Source real manager history so the SCD2 has depth on day one, and find a source for the delisted trusts so survivorship rests on more than two. |

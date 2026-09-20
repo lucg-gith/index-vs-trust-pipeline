@@ -61,7 +61,7 @@ A diagram of the model is in [docs/star-schema.html](docs/star-schema.html).
 
 | Source | What it gives |
 |---|---|
-| Yahoo Finance via `yfinance` | **All prices, both sides.** Monthly bars, full history, with dividends. 102 of 118 trust tickers return data; 75 of them reach back 15 years or more. SPY from 1993, plus IVV and VOO as a credibility check. SPLG is requested but Yahoo no longer serves it. |
+| Yahoo Finance via `yfinance` | **All prices, both sides.** Monthly bars, full history, with dividends. 100 of 118 trust tickers return data; 75 reach back 15 years or more, the oldest to 1967. SPY from 1993, plus IVV and VOO as a credibility check. SPLG is requested but Yahoo no longer serves it. |
 | `data/uk_investment_trusts.csv` | Trust metadata — name, ticker, AIC sector, manager, management group. 120 rows, 118 tickers. Also defines the universe the Yahoo pull requests. |
 | `data/uk_investment_trusts_price_history_monthly.csv` | An archive of the two delisted trusts Yahoo has erased, `BCPT` and `CSH`. Landed in full, but only those two are used. |
 
@@ -79,7 +79,7 @@ SPY's 1.3%, so comparing on price alone would hand the index a systematic head s
 several points a year and understate the beat rate.
 
 **Yahoo's `Adj_Close` is deliberately not used.** It is dividend-adjusted for SPY, but for
-UK trusts Yahoo records the dividend events and never applies them — 97 of 102 trusts show
+UK trusts Yahoo records the dividend events and never applies them — 97 of 100 trusts show
 an adjustment of under 0.5%. `HFEL` is the clearest case: 40 dividends totalling 232.6p
 against a 359p starting price, yet an `Adj_Close` adjustment of 0.8%. Over ten years its
 price return is **−25.8%** and its total return is **+39.0%**. Silver therefore builds
