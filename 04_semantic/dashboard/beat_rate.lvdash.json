@@ -84,7 +84,7 @@
             "x": 0,
             "y": 0,
             "width": 6,
-            "height": 1
+            "height": 2
           }
         },
         {
@@ -160,7 +160,7 @@
             "x": 6,
             "y": 0,
             "width": 3,
-            "height": 1
+            "height": 2
           }
         },
         {
@@ -270,7 +270,7 @@
             "x": 9,
             "y": 0,
             "width": 3,
-            "height": 1
+            "height": 2
           }
         },
         {
@@ -297,20 +297,20 @@
               "encodings": {
                 "value": {
                   "fieldName": "index_pct",
-                  "displayName": "The index"
+                  "displayName": "The index, % gain"
                 }
               },
               "frame": {
                 "showTitle": true,
-                "title": "The index",
+                "title": "The index, % gain",
                 "showDescription": true,
-                "description": "What the S&P 500 itself returned on this measure"
+                "description": "What the S&P 500 itself returned over the selected window. 100% means the money doubled"
               }
             }
           },
           "position": {
             "x": 0,
-            "y": 1,
+            "y": 2,
             "width": 4,
             "height": 3
           }
@@ -339,20 +339,20 @@
               "encodings": {
                 "value": {
                   "fieldName": "best_trust_pct",
-                  "displayName": "Best trust"
+                  "displayName": "Best trust, % gain"
                 }
               },
               "frame": {
                 "showTitle": true,
-                "title": "Best trust",
+                "title": "Best trust, % gain",
                 "showDescription": true,
-                "description": "The strongest single trust on this measure"
+                "description": "The strongest single trust, same window and same measure"
               }
             }
           },
           "position": {
             "x": 4,
-            "y": 1,
+            "y": 2,
             "width": 4,
             "height": 3
           }
@@ -381,20 +381,20 @@
               "encodings": {
                 "value": {
                   "fieldName": "index_rank",
-                  "displayName": "Index rank"
+                  "displayName": "Index rank (1 = best)"
                 }
               },
               "frame": {
                 "showTitle": true,
-                "title": "Index rank",
+                "title": "Index rank (1 = best)",
                 "showDescription": true,
-                "description": "Where the S&P 500 sits among every ticker measured"
+                "description": "Where the S&P 500 places against every trust measured"
               }
             }
           },
           "position": {
             "x": 8,
-            "y": 1,
+            "y": 2,
             "width": 4,
             "height": 3
           }
@@ -464,7 +464,7 @@
           },
           "position": {
             "x": 0,
-            "y": 4,
+            "y": 5,
             "width": 6,
             "height": 6
           }
@@ -533,7 +533,7 @@
           },
           "position": {
             "x": 6,
-            "y": 4,
+            "y": 5,
             "width": 6,
             "height": 6
           }
@@ -613,7 +613,7 @@
           },
           "position": {
             "x": 0,
-            "y": 10,
+            "y": 11,
             "width": 5,
             "height": 8
           }
@@ -842,7 +842,7 @@
           },
           "position": {
             "x": 5,
-            "y": 10,
+            "y": 11,
             "width": 7,
             "height": 8
           }
