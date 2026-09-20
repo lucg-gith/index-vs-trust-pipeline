@@ -289,9 +289,9 @@ Specs live in `specs/<layer>/` and are gitignored — working notes, not deliver
   2011-08 onward**, because nothing older is read by any metric and the pre-2011 data is
   12.4% corrupt against 0.67% inside the window — this shrinks `dim_date` from ~710 rows to
   ~181 and is a change to a previously agreed design point.
-- **Silver is verified.** `silver.monthly_performance` holds **15,877 rows across 99
-  tickers**, `silver.ticker` holds **121**, and `silver.price_repair_log` holds **415** —
-  318 repaired, 97 deleted. Both integrity checks return **0**: no non-positive close, and
+- **Silver is verified.** `silver.monthly_performance` holds **15,697 rows across 98
+  tickers**, `silver.ticker` holds **121**, and `silver.price_repair_log` holds **399** —
+  303 repaired, 96 deleted. Both integrity checks return **0**: no non-positive close, and
   nothing left more than 2x from its neighbourhood median. `PCFT` 2019-11 came back as
   141.25 from a recorded 0.0, `JEMA` 2022-12 as 84.877 from 42.87, and `CSH`'s maximum close
   fell from 112.8 to 2.945.
@@ -299,7 +299,8 @@ Specs live in `specs/<layer>/` and are gitignored — working notes, not deliver
   the mid-point repair could be taken from a bar whose `High` and `Low` are in different
   units — `WWH` 2012-01 reads `H=773.00 L=72.50` — overwriting closes that were already
   correct. A bar is now only used when `High <= 2 * Low`. Second, **five trusts cross a split
-  back-adjustment that Yahoo only half applied** (`MRC`, `MYI`, `NAS`, `PCT`, `WWH`): their
+  back-adjustment that Yahoo only half applied** (`MRC`, `MYI`, `NAS`, `PCT`, `WWH`), and a
+  sixth (`JEMA`) still held an impossible month after every repair: their
   early months are in the pre-split unit and later months in the post-split one. Rescaling
   was tried and failed, so they are excluded whole and named. Left in, `WWH` reported a
   15-year return of **−50.9%** against a truthful figure near **+356%**. They are detected by
