@@ -39,30 +39,21 @@
       ]
     },
     {
-      "name": "risk_reward",
-      "displayName": "Every ticker, risk against reward",
+      "name": "by_house",
+      "displayName": "Beat rate by management group",
       "queryLines": [
-        "-- One dot per trust, plus SPY. IVV and VOO are dropped: they sit on the same point as SPY\n",
-        "-- and rendered as a single dot, which misrepresents how many trackers are on the chart.\n",
-        "WITH spy AS (\n",
-        "  SELECT horizon_years, volatility_pct AS spy_vol, annualised_return_pct AS spy_ret\n",
-        "  FROM `index-vs-trust-pipeline`.semantic.v_leaderboard\n",
-        "  WHERE ticker = 'SPY'\n",
-        ")\n",
-        "SELECT l.ticker, l.name, l.management_group, l.manager,\n",
-        "       l.volatility_pct, l.annualised_return_pct, l.beat_index,\n",
-        "       -- The legend does the explaining, so the chart needs no quadrant lines.\n",
-        "       CASE WHEN l.entity_type = 'Index'                    THEN 'The S&P 500'\n",
-        "            WHEN l.annualised_return_pct > s.spy_ret\n",
-        "             AND l.volatility_pct       < s.spy_vol         THEN 'Beat it, and calmer'\n",
-        "            WHEN l.annualised_return_pct > s.spy_ret         THEN 'Beat it, but bumpier'\n",
-        "            WHEN l.volatility_pct       < s.spy_vol         THEN 'Lost to it, but calmer'\n",
-        "            ELSE 'Lost to it, and bumpier'\n",
-        "       END AS outcome\n",
-        "FROM `index-vs-trust-pipeline`.semantic.v_leaderboard l\n",
-        "JOIN spy s ON s.horizon_years = l.horizon_years\n",
-        "WHERE l.horizon_years = :horizon\n",
-        "  AND (l.entity_type = 'Trust' OR l.ticker = 'SPY')"
+        "-- Only houses with 3 or more trusts. A 100% rate from a single trust is noise wearing a\n",
+        "-- finding's clothes, so the count travels with the rate, inside the label itself.\n",
+        "SELECT CONCAT(\n",
+        "         TRIM(REGEXP_REPLACE(REPLACE(cut_value, ' (UK)', ''),\n",
+        "              ' Asset Management| Investment Management| Global Investors| Investors', '')),\n",
+        "         ' (', trusts, ')')                       AS house,\n",
+        "       trusts, beat_count, beat_rate_pct, median_return_pct\n",
+        "FROM `index-vs-trust-pipeline`.semantic.v_beat_rate_by_cut\n",
+        "WHERE cut_by = 'management group'\n",
+        "  AND horizon_years = :horizon\n",
+        "  AND trusts >= 3\n",
+        "ORDER BY beat_rate_pct DESC, trusts DESC"
       ],
       "parameters": [
         {
@@ -160,9 +151,9 @@
                 }
               },
               {
-                "name": "param_risk_reward_horizon",
+                "name": "param_by_house_horizon",
                 "query": {
-                  "datasetName": "risk_reward",
+                  "datasetName": "by_house",
                   "parameters": [
                     {
                       "name": "horizon",
@@ -197,7 +188,7 @@
                   },
                   {
                     "parameterName": "horizon",
-                    "queryName": "param_risk_reward_horizon"
+                    "queryName": "param_by_house_horizon"
                   },
                   {
                     "parameterName": "horizon",
@@ -457,101 +448,63 @@
         },
         {
           "widget": {
-            "name": "risk_reward_scatter",
+            "name": "by_house_bars",
             "queries": [
               {
                 "name": "main_query",
                 "query": {
-                  "datasetName": "risk_reward",
+                  "datasetName": "by_house",
                   "fields": [
                     {
-                      "name": "ticker",
-                      "expression": "`ticker`"
+                      "name": "house",
+                      "expression": "`house`"
                     },
                     {
-                      "name": "name",
-                      "expression": "`name`"
-                    },
-                    {
-                      "name": "management_group",
-                      "expression": "`management_group`"
-                    },
-                    {
-                      "name": "volatility_pct",
-                      "expression": "`volatility_pct`"
-                    },
-                    {
-                      "name": "annualised_return_pct",
-                      "expression": "`annualised_return_pct`"
-                    },
-                    {
-                      "name": "outcome",
-                      "expression": "`outcome`"
+                      "name": "beat_rate_pct",
+                      "expression": "MAX(`beat_rate_pct`)"
                     }
                   ],
-                  "disaggregated": true
+                  "disaggregated": false
                 }
               }
             ],
             "spec": {
               "version": 3,
-              "widgetType": "scatter",
+              "widgetType": "bar",
               "encodings": {
                 "x": {
-                  "fieldName": "volatility_pct",
+                  "fieldName": "house",
                   "scale": {
-                    "type": "quantitative"
+                    "type": "categorical",
+                    "sort": {
+                      "by": "y-reversed"
+                    }
                   },
                   "axis": {
-                    "title": "Annualised volatility %",
-                    "hideTitle": false,
-                    "hideLabels": false
+                    "hideTitle": true
                   },
-                  "displayName": "Annualised volatility %"
+                  "displayName": "Management group"
                 },
                 "y": {
-                  "fieldName": "annualised_return_pct",
+                  "fieldName": "beat_rate_pct",
                   "scale": {
                     "type": "quantitative"
                   },
                   "axis": {
-                    "title": "Annualised return %",
-                    "hideTitle": false,
-                    "hideLabels": false
+                    "hideTitle": true,
+                    "hideLabels": true
                   },
-                  "displayName": "Annualised return %"
+                  "displayName": "Beat rate %"
                 },
-                "color": {
-                  "fieldName": "outcome",
-                  "scale": {
-                    "type": "categorical"
-                  },
-                  "legend": {
-                    "hide": false,
-                    "title": "How it did"
-                  },
-                  "displayName": "How it did"
-                },
-                "extra": [
-                  {
-                    "fieldName": "ticker",
-                    "displayName": "Ticker"
-                  },
-                  {
-                    "fieldName": "name",
-                    "displayName": "Trust"
-                  },
-                  {
-                    "fieldName": "management_group",
-                    "displayName": "Management group"
-                  }
-                ]
+                "label": {
+                  "show": true
+                }
               },
               "frame": {
                 "showTitle": true,
-                "title": "Risk against reward",
+                "title": "Do the big houses do better?",
                 "showDescription": true,
-                "description": "Each dot is one trust: how much it bounced (across) against what it returned a year (up). At 15 and 10 years nothing both beat the index and was calmer"
+                "description": "Share of each house's trusts that beat the index. The number in brackets is how many trusts it runs"
               }
             }
           },
