@@ -1,7 +1,9 @@
 # PRD — Do UK investment trusts beat the S&P 500?
 
 **Last updated:** 2026-09-20
-**Current position:** Step 8 of 9 — orchestration. **Step 7 is complete:** the five semantic
+**Current position:** Step 8 of 9 — orchestration. The spec is written and awaiting approval:
+`specs/05_orchestration/workflow.md`, one job of 21 tasks on a monthly schedule, sourced from
+GitHub rather than the workspace. **Step 7 is complete:** the five semantic
 views and the dashboard are both built and verified. The dashboard is a Databricks AI/BI page
 created through the Lakeview REST API and published — one page, seven tiles, five datasets,
 its definition version-controlled at `04_semantic/dashboard/beat_rate.lvdash.json`. A Power BI
@@ -287,7 +289,7 @@ Specs live in `specs/<layer>/` and are gitignored — working notes, not deliver
 | 6 | **Gold facts** — monthly plus horizon, return + risk | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 7a | **Semantic** — five thin views over Gold | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 7b | **Dashboard** — one page, seven tiles | ✅ | ✅ | ✅ | ✅ | ✅ |
-| 8 | **Orchestration** — one monthly Workflow | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| 8 | **Orchestration** — one monthly Workflow | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | 9 | **Presentation** — README, video, LinkedIn | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ### Open at this moment
