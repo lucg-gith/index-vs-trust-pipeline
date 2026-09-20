@@ -1,0 +1,701 @@
+{
+  "datasets": [
+    {
+      "name": "kpi_headline",
+      "displayName": "Headline at the selected horizon",
+      "queryLines": [
+        "-- One row. Cohort is hard-coded so the headline is never the flattered number.\n",
+        "SELECT *\n",
+        "FROM `index-vs-trust-pipeline`.semantic.v_beat_rate\n",
+        "WHERE cohort = 'all trusts'\n",
+        "  AND horizon_years = :horizon"
+      ],
+      "parameters": [
+        {
+          "displayName": "horizon",
+          "keyword": "horizon",
+          "dataType": "INTEGER",
+          "defaultSelection": {
+            "values": {
+              "dataType": "INTEGER",
+              "values": [
+                {
+                  "value": "15"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "beat_rate_by_horizon",
+      "displayName": "Beat rate at every horizon",
+      "queryLines": [
+        "-- Deliberately unfiltered by horizon: this tile exists to show all five at once.\n",
+        "SELECT horizon_years, beat_rate_pct, beat_count, trusts\n",
+        "FROM `index-vs-trust-pipeline`.semantic.v_beat_rate\n",
+        "WHERE cohort = 'all trusts'"
+      ]
+    },
+    {
+      "name": "risk_reward",
+      "displayName": "Every ticker, risk against reward",
+      "queryLines": [
+        "-- Both axes annualised, so the ratio between them is the risk-adjusted return.\n",
+        "SELECT ticker, name, entity_type, management_group, manager,\n",
+        "       volatility_pct, annualised_return_pct, total_return_pct, beat_index\n",
+        "FROM `index-vs-trust-pipeline`.semantic.v_leaderboard\n",
+        "WHERE horizon_years = :horizon"
+      ],
+      "parameters": [
+        {
+          "displayName": "horizon",
+          "keyword": "horizon",
+          "dataType": "INTEGER",
+          "defaultSelection": {
+            "values": {
+              "dataType": "INTEGER",
+              "values": [
+                {
+                  "value": "15"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "survivorship",
+      "displayName": "All trusts against survivors only",
+      "queryLines": [
+        "-- The gap between the two cohorts is survivorship bias, in percentage points.\n",
+        "SELECT horizon_years, cohort, beat_rate_pct, trusts\n",
+        "FROM `index-vs-trust-pipeline`.semantic.v_beat_rate"
+      ]
+    },
+    {
+      "name": "winners",
+      "displayName": "Top ten trusts and who ran them",
+      "queryLines": [
+        "-- Trusts only. An index has no manager, which is the point of the comparison.\n",
+        "SELECT rank_by_return, ticker, name, manager, management_group,\n",
+        "       annualised_return_pct, volatility_pct, risk_adjusted_return, beat_index\n",
+        "FROM `index-vs-trust-pipeline`.semantic.v_leaderboard\n",
+        "WHERE horizon_years = :horizon\n",
+        "  AND entity_type = 'Trust'\n",
+        "ORDER BY rank_by_return\n",
+        "LIMIT 10"
+      ],
+      "parameters": [
+        {
+          "displayName": "horizon",
+          "keyword": "horizon",
+          "dataType": "INTEGER",
+          "defaultSelection": {
+            "values": {
+              "dataType": "INTEGER",
+              "values": [
+                {
+                  "value": "15"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "name": "the_answer",
+      "displayName": "The answer",
+      "layout": [
+        {
+          "widget": {
+            "name": "page_title",
+            "textbox_spec": "# Do UK investment trusts beat the S&P 500?\nTotal return on both sides, price growth plus dividends compounded. Returns are compared in each side's own currency, with no GBP/USD conversion."
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 9,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "horizon_filter",
+            "queries": [
+              {
+                "name": "param_kpi_headline_horizon",
+                "query": {
+                  "datasetName": "kpi_headline",
+                  "parameters": [
+                    {
+                      "name": "horizon",
+                      "keyword": "horizon"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "param_risk_reward_horizon",
+                "query": {
+                  "datasetName": "risk_reward",
+                  "parameters": [
+                    {
+                      "name": "horizon",
+                      "keyword": "horizon"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "param_winners_horizon",
+                "query": {
+                  "datasetName": "winners",
+                  "parameters": [
+                    {
+                      "name": "horizon",
+                      "keyword": "horizon"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "filter-single-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "parameterName": "horizon",
+                    "queryName": "param_kpi_headline_horizon"
+                  },
+                  {
+                    "parameterName": "horizon",
+                    "queryName": "param_risk_reward_horizon"
+                  },
+                  {
+                    "parameterName": "horizon",
+                    "queryName": "param_winners_horizon"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Horizon (years)"
+              }
+            }
+          },
+          "position": {
+            "x": 9,
+            "y": 0,
+            "width": 3,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "kpi_beat_rate",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "kpi_headline",
+                  "fields": [
+                    {
+                      "name": "beat_rate_pct",
+                      "expression": "MAX(`beat_rate_pct`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "beat_rate_pct",
+                  "displayName": "% of trusts"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Beat the S&P 500",
+                "showDescription": true,
+                "description": "Share of trusts whose total return exceeded the index over the same window"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 4,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "kpi_beat_and_calmer",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "kpi_headline",
+                  "fields": [
+                    {
+                      "name": "beat_and_calmer_pct",
+                      "expression": "MAX(`beat_and_calmer_pct`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "beat_and_calmer_pct",
+                  "displayName": "% of trusts"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Beat it AND were less volatile",
+                "showDescription": true,
+                "description": "The only unambiguous win: more return for less risk than simply buying the index"
+              }
+            }
+          },
+          "position": {
+            "x": 4,
+            "y": 2,
+            "width": 4,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "kpi_volatility",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "kpi_headline",
+                  "fields": [
+                    {
+                      "name": "median_volatility_pct",
+                      "expression": "MAX(`median_volatility_pct`)"
+                    },
+                    {
+                      "name": "index_volatility_pct",
+                      "expression": "MAX(`index_volatility_pct`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "median_volatility_pct",
+                  "displayName": "Median trust"
+                },
+                "target": {
+                  "fieldName": "index_volatility_pct",
+                  "displayName": "S&P 500"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Annualised volatility",
+                "showDescription": true,
+                "description": "How much the return bounces around. Higher is a rougher ride"
+              }
+            }
+          },
+          "position": {
+            "x": 8,
+            "y": 2,
+            "width": 4,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "beat_rate_bars",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "beat_rate_by_horizon",
+                  "fields": [
+                    {
+                      "name": "horizon_years",
+                      "expression": "`horizon_years`"
+                    },
+                    {
+                      "name": "beat_rate_pct",
+                      "expression": "MAX(`beat_rate_pct`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "horizon_years",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "x-reversed"
+                    }
+                  },
+                  "displayName": "Horizon (years)"
+                },
+                "y": {
+                  "fieldName": "beat_rate_pct",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "axis": {
+                    "title": "Beat rate %"
+                  },
+                  "displayName": "Beat rate %"
+                },
+                "label": {
+                  "show": true
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Beat rate by horizon",
+                "showDescription": true,
+                "description": "The shorter the window, the better active management looks"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 6,
+            "width": 5,
+            "height": 7
+          }
+        },
+        {
+          "widget": {
+            "name": "risk_reward_scatter",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "risk_reward",
+                  "fields": [
+                    {
+                      "name": "volatility_pct",
+                      "expression": "`volatility_pct`"
+                    },
+                    {
+                      "name": "annualised_return_pct",
+                      "expression": "`annualised_return_pct`"
+                    },
+                    {
+                      "name": "entity_type",
+                      "expression": "`entity_type`"
+                    },
+                    {
+                      "name": "name",
+                      "expression": "`name`"
+                    },
+                    {
+                      "name": "ticker",
+                      "expression": "`ticker`"
+                    },
+                    {
+                      "name": "management_group",
+                      "expression": "`management_group`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "scatter",
+              "encodings": {
+                "x": {
+                  "fieldName": "volatility_pct",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "axis": {
+                    "title": "Annualised volatility %"
+                  },
+                  "displayName": "Annualised volatility %"
+                },
+                "y": {
+                  "fieldName": "annualised_return_pct",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "axis": {
+                    "title": "Annualised return %"
+                  },
+                  "displayName": "Annualised return %"
+                },
+                "color": {
+                  "fieldName": "entity_type",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "Type"
+                },
+                "extra": [
+                  {
+                    "fieldName": "ticker",
+                    "displayName": "Ticker"
+                  },
+                  {
+                    "fieldName": "name",
+                    "displayName": "Trust"
+                  },
+                  {
+                    "fieldName": "management_group",
+                    "displayName": "Management group"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Risk against reward",
+                "showDescription": true,
+                "description": "Both axes are annualised, so the ratio between them is the risk-adjusted return. Above and to the left of the index is better on both counts. At 15 and 10 years no trust is there at all"
+              }
+            }
+          },
+          "position": {
+            "x": 5,
+            "y": 6,
+            "width": 7,
+            "height": 7
+          }
+        },
+        {
+          "widget": {
+            "name": "survivorship_bars",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "survivorship",
+                  "fields": [
+                    {
+                      "name": "horizon_years",
+                      "expression": "`horizon_years`"
+                    },
+                    {
+                      "name": "cohort",
+                      "expression": "`cohort`"
+                    },
+                    {
+                      "name": "beat_rate_pct",
+                      "expression": "MAX(`beat_rate_pct`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "horizon_years",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "x-reversed"
+                    }
+                  },
+                  "displayName": "Horizon (years)"
+                },
+                "y": {
+                  "fieldName": "beat_rate_pct",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "axis": {
+                    "title": "Beat rate %"
+                  },
+                  "displayName": "Beat rate %"
+                },
+                "color": {
+                  "fieldName": "cohort",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "Cohort"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Survivorship: all trusts against survivors only",
+                "showDescription": true,
+                "description": "The gap is under one percentage point because only 2 of the 18 trusts Yahoo has erased were recoverable. This demonstrates the mechanism; it does not size the effect"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 13,
+            "width": 4,
+            "height": 7
+          }
+        },
+        {
+          "widget": {
+            "name": "winners_table",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "winners",
+                  "fields": [
+                    {
+                      "name": "rank_by_return",
+                      "expression": "`rank_by_return`"
+                    },
+                    {
+                      "name": "ticker",
+                      "expression": "`ticker`"
+                    },
+                    {
+                      "name": "name",
+                      "expression": "`name`"
+                    },
+                    {
+                      "name": "manager",
+                      "expression": "`manager`"
+                    },
+                    {
+                      "name": "management_group",
+                      "expression": "`management_group`"
+                    },
+                    {
+                      "name": "annualised_return_pct",
+                      "expression": "`annualised_return_pct`"
+                    },
+                    {
+                      "name": "volatility_pct",
+                      "expression": "`volatility_pct`"
+                    },
+                    {
+                      "name": "beat_index",
+                      "expression": "`beat_index`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 1,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "rank_by_return",
+                    "displayName": "#",
+                    "type": "integer",
+                    "order": 0,
+                    "visible": true
+                  },
+                  {
+                    "fieldName": "ticker",
+                    "displayName": "Ticker",
+                    "type": "string",
+                    "order": 1,
+                    "visible": true
+                  },
+                  {
+                    "fieldName": "name",
+                    "displayName": "Trust",
+                    "type": "string",
+                    "order": 2,
+                    "visible": true
+                  },
+                  {
+                    "fieldName": "manager",
+                    "displayName": "Manager",
+                    "type": "string",
+                    "order": 3,
+                    "visible": true
+                  },
+                  {
+                    "fieldName": "management_group",
+                    "displayName": "Management group",
+                    "type": "string",
+                    "order": 4,
+                    "visible": true
+                  },
+                  {
+                    "fieldName": "annualised_return_pct",
+                    "displayName": "Annualised return %",
+                    "type": "float",
+                    "order": 5,
+                    "visible": true
+                  },
+                  {
+                    "fieldName": "volatility_pct",
+                    "displayName": "Volatility %",
+                    "type": "float",
+                    "order": 6,
+                    "visible": true
+                  },
+                  {
+                    "fieldName": "beat_index",
+                    "displayName": "Beat the index",
+                    "type": "boolean",
+                    "order": 7,
+                    "visible": true
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Who ran the winners",
+                "showDescription": true,
+                "description": "Display only — ranking the fact table and then asking what share beat the index would always answer 100%. Gaps in the rank are the index trackers: at 15 years SPY, IVV and VOO hold 5, 6 and 7"
+              }
+            }
+          },
+          "position": {
+            "x": 4,
+            "y": 13,
+            "width": 8,
+            "height": 7
+          }
+        }
+      ]
+    }
+  ]
+}

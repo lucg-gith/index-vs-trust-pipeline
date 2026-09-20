@@ -1,8 +1,12 @@
 # PRD — Do UK investment trusts beat the S&P 500?
 
 **Last updated:** 2026-09-20
-**Current position:** Step 7 of 9 — the dashboard. **The five semantic views are built and
-verified**; only the dashboard itself remains. **Gold is complete and
+**Current position:** Step 8 of 9 — orchestration. **Step 7 is complete:** the five semantic
+views and the dashboard are both built and verified. The dashboard is a Databricks AI/BI page
+created through the Lakeview REST API and published — one page, seven tiles, five datasets,
+its definition version-controlled at `04_semantic/dashboard/beat_rate.lvdash.json`. A Power BI
+build sheet in the same folder reproduces it by hand, because the Power BI REST API cannot
+author report visuals. **Gold is complete and
 the answer is in the warehouse:** only **5.3%** of
 UK investment trusts beat the S&P 500 over 15 years, **10.6%** over 10 — and **none** beat it
 over 15 or 10 years while also being less volatile. `gold.fact_horizon_performance` holds 445 rows across five horizons, with return, income,
@@ -279,7 +283,8 @@ Specs live in `specs/<layer>/` and are gitignored — working notes, not deliver
 | 4 | **Silver** — scale repair, currency, total return | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 5 | **Gold dims** — `dim_date`, `dim_ticker` SCD2 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 6 | **Gold facts** — monthly plus horizon, return + risk | ✅ | ✅ | ✅ | ✅ | ✅ |
-| 7 | **Semantic plus dashboard** | ✅ | ✅ | ✅ | ✅ | 🔵 |
+| 7a | **Semantic** — five thin views over Gold | ✅ | ✅ | ✅ | ✅ | ✅ |
+| 7b | **Dashboard** — one page, seven tiles | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 8 | **Orchestration** — one monthly Workflow | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 9 | **Presentation** — README, video, LinkedIn | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
@@ -407,12 +412,13 @@ opening version rows.
 36-month minimum, delisted trusts judged over their own lifespan against the index over that
 same span, and **volatility plus risk-adjusted return** aggregated over each window.
 
-**Step 7 — Semantic and dashboard**
-Scope settled 2026-09-20 in `specs/OBJECTIVE.md`. Headline: beat rate by horizon, with and
-without delisted trusts, plus the return-versus-volatility verdict. Four extra cuts, all
-plain `GROUP BY` views over columns `dim_ticker` already holds — **by management group**,
-**sole vs multi-manager**, **by AIC sector**, and a **best/worst leaderboard** (display
-only; it never filters the fact table). Views, so they cut from the end if time runs short.
+**Step 7 — Semantic and dashboard** *(done)*
+Five thin views over Gold, then one AI/BI dashboard page over two of them. Dashboard scope was
+cut from four pages to seven tiles on 2026-09-20: three counters, beat rate by horizon, a
+risk-against-reward scatter, the survivorship pair, and a top-ten table naming the managers.
+Each tile owns its own dataset, so no click can recompute another tile. The three cuts by
+management group, manager structure and AIC sector stay as `v_beat_rate_by_cut` and are quoted
+aloud rather than drawn. Full detail in `specs/04_semantic/dashboard.md`.
 
 **Step 8 — Orchestration**
 One Databricks Workflow, chained tasks, monthly schedule. Not theatre: the SPY side
