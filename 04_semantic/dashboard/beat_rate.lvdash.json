@@ -325,8 +325,8 @@
                   "datasetName": "kpi",
                   "fields": [
                     {
-                      "name": "best_trust_pct",
-                      "expression": "MAX(`best_trust_pct`)"
+                      "name": "best_trust_label",
+                      "expression": "MAX(`best_trust_label`)"
                     }
                   ],
                   "disaggregated": false
@@ -338,15 +338,15 @@
               "widgetType": "counter",
               "encodings": {
                 "value": {
-                  "fieldName": "best_trust_pct",
-                  "displayName": "Best trust, % gain"
+                  "fieldName": "best_trust_label",
+                  "displayName": "Best trust"
                 }
               },
               "frame": {
                 "showTitle": true,
-                "title": "Best trust, % gain",
+                "title": "Best trust",
                 "showDescription": true,
-                "description": "The strongest single trust, same window and same measure"
+                "description": "The strongest single trust on this measure, and what it gained. Its full name is row 1 of the table below"
               }
             }
           },
