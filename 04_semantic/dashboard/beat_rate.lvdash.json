@@ -1,118 +1,72 @@
 {
   "datasets": [
     {
-      "name": "kpi_headline",
-      "displayName": "Headline at the selected horizon",
+      "name": "kpi",
+      "displayName": "Index, best trust and rank for the selected horizon and measure",
       "queryLines": [
-        "-- One row. Cohort is hard-coded so the headline is never the flattered number.\n",
-        "SELECT *\n",
-        "FROM `index-vs-trust-pipeline`.semantic.v_beat_rate\n",
-        "WHERE cohort = 'all trusts'\n",
-        "  AND horizon_years = :horizon"
-      ],
-      "parameters": [
-        {
-          "displayName": "horizon",
-          "keyword": "horizon",
-          "dataType": "INTEGER",
-          "defaultSelection": {
-            "values": {
-              "dataType": "INTEGER",
-              "values": [
-                {
-                  "value": "15"
-                }
-              ]
-            }
-          }
-        }
+        "-- One row once both filters are applied. Every counter reads a column of it.\n",
+        "SELECT * FROM `index-vs-trust-pipeline`.semantic.v_measure_summary"
       ]
     },
     {
-      "name": "beat_rate_by_horizon",
-      "displayName": "Beat rate at every horizon",
+      "name": "by_horizon",
+      "displayName": "Share of trusts above the index, every horizon",
       "queryLines": [
-        "-- Deliberately unfiltered by horizon: this tile exists to show all five at once.\n",
-        "SELECT horizon_years, beat_rate_pct, beat_count, trusts\n",
-        "FROM `index-vs-trust-pipeline`.semantic.v_beat_rate\n",
-        "WHERE cohort = 'all trusts'"
+        "-- Deliberately not filtered by horizon: this tile exists to show all five at once.\n",
+        "SELECT horizon_years, measure, pct_above, trusts_above, trusts\n",
+        "FROM `index-vs-trust-pipeline`.semantic.v_measure_summary"
       ]
     },
     {
       "name": "by_house",
-      "displayName": "Beat rate by management group",
+      "displayName": "Share above the index by management group",
       "queryLines": [
-        "-- Only houses with 3 or more trusts. A 100% rate from a single trust is noise wearing a\n",
-        "-- finding's clothes, so the count travels with the rate, inside the label itself.\n",
-        "SELECT CONCAT(\n",
-        "         TRIM(REGEXP_REPLACE(REPLACE(cut_value, ' (UK)', ''),\n",
+        "-- Houses with 3 or more trusts only. A 100% rate off one trust is noise wearing a\n",
+        "-- finding's clothes, so the count travels inside the label.\n",
+        "SELECT horizon_years, measure,\n",
+        "       CONCAT(TRIM(REGEXP_REPLACE(REPLACE(management_group, ' (UK)', ''),\n",
         "              ' Asset Management| Investment Management| Global Investors| Investors', '')),\n",
-        "         ' (', trusts, ')')                       AS house,\n",
-        "       trusts, beat_count, beat_rate_pct, median_return_pct\n",
-        "FROM `index-vs-trust-pipeline`.semantic.v_beat_rate_by_cut\n",
-        "WHERE cut_by = 'management group'\n",
-        "  AND horizon_years = :horizon\n",
-        "  AND trusts >= 3\n",
-        "ORDER BY beat_rate_pct DESC, trusts DESC"
-      ],
-      "parameters": [
-        {
-          "displayName": "horizon",
-          "keyword": "horizon",
-          "dataType": "INTEGER",
-          "defaultSelection": {
-            "values": {
-              "dataType": "INTEGER",
-              "values": [
-                {
-                  "value": "15"
-                }
-              ]
-            }
-          }
-        }
+        "              ' (', COUNT(*), ')')                                              AS house,\n",
+        "       ROUND(100.0 * SUM(CASE WHEN beats_index THEN 1 ELSE 0 END) / COUNT(*), 1) AS pct_above\n",
+        "FROM `index-vs-trust-pipeline`.semantic.v_measure\n",
+        "WHERE entity_type = 'Trust' AND management_group IS NOT NULL\n",
+        "GROUP BY horizon_years, measure, management_group\n",
+        "HAVING COUNT(*) >= 3"
       ]
     },
     {
       "name": "survivorship",
-      "displayName": "All trusts against survivors only",
+      "displayName": "Including and excluding the delisted trusts",
       "queryLines": [
-        "-- The gap between the two cohorts is survivorship bias, in percentage points.\n",
-        "SELECT horizon_years, cohort, beat_rate_pct, trusts\n",
-        "FROM `index-vs-trust-pipeline`.semantic.v_beat_rate"
+        "-- The gap between the cohorts is survivorship bias, in percentage points.\n",
+        "WITH c AS (\n",
+        "  SELECT horizon_years, measure, 'all trusts' AS cohort, beats_index\n",
+        "  FROM `index-vs-trust-pipeline`.semantic.v_measure WHERE entity_type = 'Trust'\n",
+        "  UNION ALL\n",
+        "  SELECT horizon_years, measure, 'survivors only', beats_index\n",
+        "  FROM `index-vs-trust-pipeline`.semantic.v_measure WHERE entity_type = 'Trust' AND status = 'active'\n",
+        ")\n",
+        "SELECT horizon_years, measure, cohort,\n",
+        "       ROUND(100.0 * SUM(CASE WHEN beats_index THEN 1 ELSE 0 END) / COUNT(*), 1) AS pct_above\n",
+        "FROM c GROUP BY horizon_years, measure, cohort"
       ]
     },
     {
-      "name": "winners",
-      "displayName": "Top ten trusts and who ran them",
+      "name": "top20",
+      "displayName": "Top 20 on the selected measure, with the index ranked in",
       "queryLines": [
-        "-- Top 20 by return with the index ranked among them, so where it lands is always visible.\n",
-        "-- An index has no manager; that absence is the comparison, so the cell says so.\n",
-        "SELECT rank_by_return, ticker, name,\n",
-        "       CASE WHEN entity_type = 'Index' THEN 'INDEX' ELSE manager END          AS manager,\n",
-        "       CASE WHEN entity_type = 'Index' THEN 'INDEX' ELSE management_group END AS management_group,\n",
-        "       annualised_return_pct, beat_index\n",
-        "FROM `index-vs-trust-pipeline`.semantic.v_leaderboard\n",
-        "WHERE horizon_years = :horizon\n",
-        "  AND (rank_by_return <= 20 OR ticker = 'SPY')\n",
-        "ORDER BY rank_by_return"
-      ],
-      "parameters": [
-        {
-          "displayName": "horizon",
-          "keyword": "horizon",
-          "dataType": "INTEGER",
-          "defaultSelection": {
-            "values": {
-              "dataType": "INTEGER",
-              "values": [
-                {
-                  "value": "15"
-                }
-              ]
-            }
-          }
-        }
+        "-- The index always appears, even when it ranks well outside the top 20 (it does, on income).\n",
+        "-- It is marked in the data because a table cell cannot be conditionally coloured here.\n",
+        "SELECT horizon_years, measure, rank_in_measure,\n",
+        "       CASE WHEN entity_type = 'Index' THEN CONCAT('◆ ', ticker)\n",
+        "            ELSE ticker END                                            AS ticker,\n",
+        "       CASE WHEN entity_type = 'Index' THEN UPPER(CONCAT('◆ THE INDEX  ', ticker))\n",
+        "            ELSE trust_name END                                        AS trust_name,\n",
+        "       CASE WHEN entity_type = 'Index' THEN '◆ no manager'\n",
+        "            ELSE manager END                                           AS manager,\n",
+        "       value_pct, beats_index\n",
+        "FROM `index-vs-trust-pipeline`.semantic.v_measure\n",
+        "WHERE rank_in_measure <= 20 OR ticker = 'SPY'"
       ]
     }
   ],
@@ -124,13 +78,13 @@
         {
           "widget": {
             "name": "page_title",
-            "textbox_spec": "# Do UK investment trusts beat the S&P 500?\nTotal return on both sides, price growth plus dividends compounded. Returns are compared in each side's own currency, with no GBP/USD conversion."
+            "textbox_spec": "# Do UK investment trusts beat the S&P 500?"
           },
           "position": {
             "x": 0,
             "y": 0,
-            "width": 9,
-            "height": 2
+            "width": 6,
+            "height": 1
           }
         },
         {
@@ -138,39 +92,39 @@
             "name": "horizon_filter",
             "queries": [
               {
-                "name": "param_kpi_headline_horizon",
+                "name": "f_kpi_horizon_years",
                 "query": {
-                  "datasetName": "kpi_headline",
-                  "parameters": [
+                  "datasetName": "kpi",
+                  "fields": [
                     {
-                      "name": "horizon",
-                      "keyword": "horizon"
+                      "name": "horizon_years",
+                      "expression": "`horizon_years`"
                     }
                   ],
                   "disaggregated": false
                 }
               },
               {
-                "name": "param_by_house_horizon",
+                "name": "f_by_house_horizon_years",
                 "query": {
                   "datasetName": "by_house",
-                  "parameters": [
+                  "fields": [
                     {
-                      "name": "horizon",
-                      "keyword": "horizon"
+                      "name": "horizon_years",
+                      "expression": "`horizon_years`"
                     }
                   ],
                   "disaggregated": false
                 }
               },
               {
-                "name": "param_winners_horizon",
+                "name": "f_top20_horizon_years",
                 "query": {
-                  "datasetName": "winners",
-                  "parameters": [
+                  "datasetName": "top20",
+                  "fields": [
                     {
-                      "name": "horizon",
-                      "keyword": "horizon"
+                      "name": "horizon_years",
+                      "expression": "`horizon_years`"
                     }
                   ],
                   "disaggregated": false
@@ -183,16 +137,16 @@
               "encodings": {
                 "fields": [
                   {
-                    "parameterName": "horizon",
-                    "queryName": "param_kpi_headline_horizon"
+                    "fieldName": "horizon_years",
+                    "queryName": "f_kpi_horizon_years"
                   },
                   {
-                    "parameterName": "horizon",
-                    "queryName": "param_by_house_horizon"
+                    "fieldName": "horizon_years",
+                    "queryName": "f_by_house_horizon_years"
                   },
                   {
-                    "parameterName": "horizon",
-                    "queryName": "param_winners_horizon"
+                    "fieldName": "horizon_years",
+                    "queryName": "f_top20_horizon_years"
                   }
                 ]
               },
@@ -203,24 +157,134 @@
             }
           },
           "position": {
-            "x": 9,
+            "x": 6,
             "y": 0,
             "width": 3,
-            "height": 2
+            "height": 1
           }
         },
         {
           "widget": {
-            "name": "kpi_beat_rate",
+            "name": "measure_filter",
+            "queries": [
+              {
+                "name": "f_kpi_measure",
+                "query": {
+                  "datasetName": "kpi",
+                  "fields": [
+                    {
+                      "name": "measure",
+                      "expression": "`measure`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "f_by_horizon_measure",
+                "query": {
+                  "datasetName": "by_horizon",
+                  "fields": [
+                    {
+                      "name": "measure",
+                      "expression": "`measure`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "f_by_house_measure",
+                "query": {
+                  "datasetName": "by_house",
+                  "fields": [
+                    {
+                      "name": "measure",
+                      "expression": "`measure`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "f_survivorship_measure",
+                "query": {
+                  "datasetName": "survivorship",
+                  "fields": [
+                    {
+                      "name": "measure",
+                      "expression": "`measure`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "f_top20_measure",
+                "query": {
+                  "datasetName": "top20",
+                  "fields": [
+                    {
+                      "name": "measure",
+                      "expression": "`measure`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "filter-single-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "measure",
+                    "queryName": "f_kpi_measure"
+                  },
+                  {
+                    "fieldName": "measure",
+                    "queryName": "f_by_horizon_measure"
+                  },
+                  {
+                    "fieldName": "measure",
+                    "queryName": "f_by_house_measure"
+                  },
+                  {
+                    "fieldName": "measure",
+                    "queryName": "f_survivorship_measure"
+                  },
+                  {
+                    "fieldName": "measure",
+                    "queryName": "f_top20_measure"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Compare on"
+              }
+            }
+          },
+          "position": {
+            "x": 9,
+            "y": 0,
+            "width": 3,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "kpi_index",
             "queries": [
               {
                 "name": "main_query",
                 "query": {
-                  "datasetName": "kpi_headline",
+                  "datasetName": "kpi",
                   "fields": [
                     {
-                      "name": "beat_rate_pct",
-                      "expression": "MAX(`beat_rate_pct`)"
+                      "name": "index_pct",
+                      "expression": "MAX(`index_pct`)"
                     }
                   ],
                   "disaggregated": false
@@ -232,37 +296,37 @@
               "widgetType": "counter",
               "encodings": {
                 "value": {
-                  "fieldName": "beat_rate_pct",
-                  "displayName": "% of trusts"
+                  "fieldName": "index_pct",
+                  "displayName": "The index"
                 }
               },
               "frame": {
                 "showTitle": true,
-                "title": "Beat it on total return",
+                "title": "The index",
                 "showDescription": true,
-                "description": "Price growth plus dividends, compounded"
+                "description": "What the S&P 500 itself returned on this measure"
               }
             }
           },
           "position": {
             "x": 0,
-            "y": 2,
+            "y": 1,
             "width": 4,
-            "height": 4
+            "height": 3
           }
         },
         {
           "widget": {
-            "name": "kpi_out_grew",
+            "name": "kpi_best",
             "queries": [
               {
                 "name": "main_query",
                 "query": {
-                  "datasetName": "kpi_headline",
+                  "datasetName": "kpi",
                   "fields": [
                     {
-                      "name": "out_grew_pct",
-                      "expression": "MAX(`out_grew_pct`)"
+                      "name": "best_trust_pct",
+                      "expression": "MAX(`best_trust_pct`)"
                     }
                   ],
                   "disaggregated": false
@@ -274,37 +338,37 @@
               "widgetType": "counter",
               "encodings": {
                 "value": {
-                  "fieldName": "out_grew_pct",
-                  "displayName": "% of trusts"
+                  "fieldName": "best_trust_pct",
+                  "displayName": "Best trust"
                 }
               },
               "frame": {
                 "showTitle": true,
-                "title": "Out-grew it on price",
+                "title": "Best trust",
                 "showDescription": true,
-                "description": "Share price alone, before any dividends"
+                "description": "The strongest single trust on this measure"
               }
             }
           },
           "position": {
             "x": 4,
-            "y": 2,
+            "y": 1,
             "width": 4,
-            "height": 4
+            "height": 3
           }
         },
         {
           "widget": {
-            "name": "kpi_out_yielded",
+            "name": "kpi_rank",
             "queries": [
               {
                 "name": "main_query",
                 "query": {
-                  "datasetName": "kpi_headline",
+                  "datasetName": "kpi",
                   "fields": [
                     {
-                      "name": "out_yielded_pct",
-                      "expression": "MAX(`out_yielded_pct`)"
+                      "name": "index_rank",
+                      "expression": "MAX(`index_rank`)"
                     }
                   ],
                   "disaggregated": false
@@ -316,41 +380,41 @@
               "widgetType": "counter",
               "encodings": {
                 "value": {
-                  "fieldName": "out_yielded_pct",
-                  "displayName": "% of trusts"
+                  "fieldName": "index_rank",
+                  "displayName": "Index rank"
                 }
               },
               "frame": {
                 "showTitle": true,
-                "title": "Paid more income than it",
+                "title": "Index rank",
                 "showDescription": true,
-                "description": "Cumulative dividends, not an annual yield"
+                "description": "Where the S&P 500 sits among every ticker measured"
               }
             }
           },
           "position": {
             "x": 8,
-            "y": 2,
+            "y": 1,
             "width": 4,
-            "height": 4
+            "height": 3
           }
         },
         {
           "widget": {
-            "name": "beat_rate_bars",
+            "name": "above_by_horizon",
             "queries": [
               {
                 "name": "main_query",
                 "query": {
-                  "datasetName": "beat_rate_by_horizon",
+                  "datasetName": "by_horizon",
                   "fields": [
                     {
                       "name": "horizon_years",
                       "expression": "`horizon_years`"
                     },
                     {
-                      "name": "beat_rate_pct",
-                      "expression": "MAX(`beat_rate_pct`)"
+                      "name": "pct_above",
+                      "expression": "MAX(`pct_above`)"
                     }
                   ],
                   "disaggregated": false
@@ -369,21 +433,22 @@
                       "by": "x-reversed"
                     }
                   },
-                  "displayName": "Horizon (years)",
                   "axis": {
                     "hideTitle": true
-                  }
+                  },
+                  "displayName": "horizon_years"
                 },
                 "y": {
-                  "fieldName": "beat_rate_pct",
+                  "fieldName": "pct_above",
                   "scale": {
                     "type": "quantitative"
                   },
                   "axis": {
                     "hideTitle": true,
-                    "hideLabels": true
+                    "hideLabels": true,
+                    "hideGrid": true
                   },
-                  "displayName": "Beat rate %"
+                  "displayName": "pct_above"
                 },
                 "label": {
                   "show": true
@@ -391,17 +456,17 @@
               },
               "frame": {
                 "showTitle": true,
-                "title": "Beat rate by horizon",
+                "title": "Share of trusts above the index",
                 "showDescription": true,
-                "description": "The shorter the window, the better active management looks"
+                "description": "Percent that beat the S&P 500, at every horizon"
               }
             }
           },
           "position": {
             "x": 0,
-            "y": 6,
-            "width": 5,
-            "height": 7
+            "y": 4,
+            "width": 6,
+            "height": 6
           }
         },
         {
@@ -418,8 +483,8 @@
                       "expression": "`house`"
                     },
                     {
-                      "name": "beat_rate_pct",
-                      "expression": "MAX(`beat_rate_pct`)"
+                      "name": "pct_above",
+                      "expression": "MAX(`pct_above`)"
                     }
                   ],
                   "disaggregated": false
@@ -441,10 +506,10 @@
                   "axis": {
                     "hideTitle": true
                   },
-                  "displayName": "Management group"
+                  "displayName": "house"
                 },
                 "y": {
-                  "fieldName": "beat_rate_pct",
+                  "fieldName": "pct_above",
                   "scale": {
                     "type": "quantitative"
                   },
@@ -452,7 +517,7 @@
                     "hideTitle": true,
                     "hideLabels": true
                   },
-                  "displayName": "Beat rate %"
+                  "displayName": "pct_above"
                 },
                 "label": {
                   "show": true
@@ -462,15 +527,15 @@
                 "showTitle": true,
                 "title": "Do the big houses do better?",
                 "showDescription": true,
-                "description": "Share of each house's trusts that beat the index. The number in brackets is how many trusts it runs"
+                "description": "Share of each house of trusts above the index. The bracket is how many it runs"
               }
             }
           },
           "position": {
-            "x": 5,
-            "y": 6,
-            "width": 7,
-            "height": 7
+            "x": 6,
+            "y": 4,
+            "width": 6,
+            "height": 6
           }
         },
         {
@@ -487,12 +552,12 @@
                       "expression": "`horizon_years`"
                     },
                     {
-                      "name": "cohort",
-                      "expression": "`cohort`"
+                      "name": "pct_above",
+                      "expression": "MAX(`pct_above`)"
                     },
                     {
-                      "name": "beat_rate_pct",
-                      "expression": "MAX(`beat_rate_pct`)"
+                      "name": "cohort",
+                      "expression": "`cohort`"
                     }
                   ],
                   "disaggregated": false
@@ -511,13 +576,13 @@
                       "by": "x-reversed"
                     }
                   },
-                  "displayName": "Horizon (years)",
                   "axis": {
                     "hideTitle": true
-                  }
+                  },
+                  "displayName": "horizon_years"
                 },
                 "y": {
-                  "fieldName": "beat_rate_pct",
+                  "fieldName": "pct_above",
                   "scale": {
                     "type": "quantitative"
                   },
@@ -525,70 +590,66 @@
                     "hideTitle": true,
                     "hideLabels": true
                   },
-                  "displayName": "Beat rate %"
+                  "displayName": "pct_above"
+                },
+                "label": {
+                  "show": true
                 },
                 "color": {
                   "fieldName": "cohort",
                   "scale": {
                     "type": "categorical"
                   },
-                  "displayName": "Cohort"
-                },
-                "label": {
-                  "show": true
+                  "displayName": "cohort"
                 }
               },
               "frame": {
                 "showTitle": true,
-                "title": "Survivorship: all trusts against survivors only",
+                "title": "Survivorship",
                 "showDescription": true,
-                "description": "The gap is under one percentage point because only 2 of the 18 trusts Yahoo has erased were recoverable. This demonstrates the mechanism; it does not size the effect"
+                "description": "Including the delisted trusts, and excluding them. The gap is the bias"
               }
             }
           },
           "position": {
             "x": 0,
-            "y": 13,
-            "width": 4,
-            "height": 10
+            "y": 10,
+            "width": 5,
+            "height": 8
           }
         },
         {
           "widget": {
-            "name": "winners_table",
+            "name": "top20_table",
             "queries": [
               {
                 "name": "main_query",
                 "query": {
-                  "datasetName": "winners",
+                  "datasetName": "top20",
                   "fields": [
                     {
-                      "name": "rank_by_return",
-                      "expression": "`rank_by_return`"
+                      "name": "rank_in_measure",
+                      "expression": "`rank_in_measure`"
                     },
                     {
                       "name": "ticker",
                       "expression": "`ticker`"
                     },
                     {
-                      "name": "name",
-                      "expression": "`name`"
+                      "name": "trust_name",
+                      "expression": "`trust_name`"
                     },
                     {
                       "name": "manager",
                       "expression": "`manager`"
                     },
                     {
-                      "name": "management_group",
-                      "expression": "`management_group`"
+                      "name": "value_pct",
+                      "expression": "`value_pct`"
                     },
                     {
-                      "name": "annualised_return_pct",
-                      "expression": "`annualised_return_pct`"
-                    },
-                    {
-                      "name": "beat_index",
-                      "expression": "`beat_index`"
+                      "name": "beats_index",
+                      "expression": "`beats_index`"
                     }
                   ],
                   "disaggregated": true
@@ -601,10 +662,10 @@
               "encodings": {
                 "columns": [
                   {
-                    "fieldName": "rank_by_return",
+                    "fieldName": "rank_in_measure",
                     "booleanValues": [
-                      "false",
-                      "true"
+                      "no",
+                      "yes"
                     ],
                     "imageUrlTemplate": "{{ @ }}",
                     "imageTitleTemplate": "{{ @ }}",
@@ -625,14 +686,14 @@
                     "highlightLinks": false,
                     "useMonospaceFont": false,
                     "preserveWhitespace": false,
-                    "displayName": "rank_by_return",
+                    "displayName": "rank_in_measure",
                     "numberFormat": "0"
                   },
                   {
                     "fieldName": "ticker",
                     "booleanValues": [
-                      "false",
-                      "true"
+                      "no",
+                      "yes"
                     ],
                     "imageUrlTemplate": "{{ @ }}",
                     "imageTitleTemplate": "{{ @ }}",
@@ -656,10 +717,10 @@
                     "displayName": "ticker"
                   },
                   {
-                    "fieldName": "name",
+                    "fieldName": "trust_name",
                     "booleanValues": [
-                      "false",
-                      "true"
+                      "no",
+                      "yes"
                     ],
                     "imageUrlTemplate": "{{ @ }}",
                     "imageTitleTemplate": "{{ @ }}",
@@ -680,13 +741,13 @@
                     "highlightLinks": false,
                     "useMonospaceFont": false,
                     "preserveWhitespace": false,
-                    "displayName": "name"
+                    "displayName": "trust_name"
                   },
                   {
                     "fieldName": "manager",
                     "booleanValues": [
-                      "false",
-                      "true"
+                      "no",
+                      "yes"
                     ],
                     "imageUrlTemplate": "{{ @ }}",
                     "imageTitleTemplate": "{{ @ }}",
@@ -710,37 +771,10 @@
                     "displayName": "manager"
                   },
                   {
-                    "fieldName": "management_group",
+                    "fieldName": "value_pct",
                     "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "string",
-                    "displayAs": "string",
-                    "visible": true,
-                    "order": 4,
-                    "title": "Management group",
-                    "allowSearch": false,
-                    "alignContent": "left",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "displayName": "management_group"
-                  },
-                  {
-                    "fieldName": "annualised_return_pct",
-                    "booleanValues": [
-                      "false",
-                      "true"
+                      "no",
+                      "yes"
                     ],
                     "imageUrlTemplate": "{{ @ }}",
                     "imageTitleTemplate": "{{ @ }}",
@@ -753,21 +787,21 @@
                     "type": "float",
                     "displayAs": "number",
                     "visible": true,
-                    "order": 5,
-                    "title": "Annualised return %",
+                    "order": 4,
+                    "title": "%",
                     "allowSearch": false,
                     "alignContent": "right",
                     "allowHTML": false,
                     "highlightLinks": false,
                     "useMonospaceFont": false,
                     "preserveWhitespace": false,
-                    "displayName": "annualised_return_pct",
-                    "numberFormat": "0.00"
+                    "displayName": "value_pct",
+                    "numberFormat": "0.0"
                   },
                   {
-                    "fieldName": "beat_index",
+                    "fieldName": "beats_index",
                     "booleanValues": [
-                      "",
+                      "no",
                       "yes"
                     ],
                     "imageUrlTemplate": "{{ @ }}",
@@ -781,15 +815,15 @@
                     "type": "boolean",
                     "displayAs": "boolean",
                     "visible": true,
-                    "order": 6,
-                    "title": "Beat it",
+                    "order": 5,
+                    "title": "Above the index",
                     "allowSearch": false,
                     "alignContent": "right",
                     "allowHTML": false,
                     "highlightLinks": false,
                     "useMonospaceFont": false,
                     "preserveWhitespace": false,
-                    "displayName": "beat_index"
+                    "displayName": "beats_index"
                   }
                 ]
               },
@@ -800,17 +834,17 @@
               "withRowNumber": false,
               "frame": {
                 "showTitle": true,
-                "title": "Top 20 by return, with the index ranked in",
+                "title": "Top 20, with the index ranked in",
                 "showDescription": true,
-                "description": "Display only. Four trusts sit above the index at 15 years; ranks 5, 6 and 7 are VOO, IVV and SPY"
+                "description": "Display only. The index is the marked row, and always appears even when it ranks below 20"
               }
             }
           },
           "position": {
-            "x": 4,
-            "y": 13,
-            "width": 8,
-            "height": 10
+            "x": 5,
+            "y": 10,
+            "width": 7,
+            "height": 8
           }
         }
       ]
