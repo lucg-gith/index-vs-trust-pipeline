@@ -91,7 +91,7 @@
         "SELECT rank_by_return, ticker, name,\n",
         "       CASE WHEN entity_type = 'Index' THEN 'INDEX' ELSE manager END          AS manager,\n",
         "       CASE WHEN entity_type = 'Index' THEN 'INDEX' ELSE management_group END AS management_group,\n",
-        "       annualised_return_pct, volatility_pct, beat_index\n",
+        "       annualised_return_pct, beat_index\n",
         "FROM `index-vs-trust-pipeline`.semantic.v_leaderboard\n",
         "WHERE horizon_years = :horizon\n",
         "  AND (rank_by_return <= 20 OR ticker = 'SPY')\n",
@@ -247,49 +247,7 @@
           "position": {
             "x": 0,
             "y": 2,
-            "width": 3,
-            "height": 4
-          }
-        },
-        {
-          "widget": {
-            "name": "kpi_beat_and_calmer",
-            "queries": [
-              {
-                "name": "main_query",
-                "query": {
-                  "datasetName": "kpi_headline",
-                  "fields": [
-                    {
-                      "name": "beat_and_calmer_pct",
-                      "expression": "MAX(`beat_and_calmer_pct`)"
-                    }
-                  ],
-                  "disaggregated": false
-                }
-              }
-            ],
-            "spec": {
-              "version": 2,
-              "widgetType": "counter",
-              "encodings": {
-                "value": {
-                  "fieldName": "beat_and_calmer_pct",
-                  "displayName": "% of trusts"
-                }
-              },
-              "frame": {
-                "showTitle": true,
-                "title": "Beat it AND were calmer",
-                "showDescription": true,
-                "description": "More return for less risk than the index"
-              }
-            }
-          },
-          "position": {
-            "x": 9,
-            "y": 2,
-            "width": 3,
+            "width": 4,
             "height": 4
           }
         },
@@ -329,9 +287,9 @@
             }
           },
           "position": {
-            "x": 3,
+            "x": 4,
             "y": 2,
-            "width": 3,
+            "width": 4,
             "height": 4
           }
         },
@@ -371,9 +329,9 @@
             }
           },
           "position": {
-            "x": 6,
+            "x": 8,
             "y": 2,
-            "width": 3,
+            "width": 4,
             "height": 4
           }
         },
@@ -629,10 +587,6 @@
                       "expression": "`annualised_return_pct`"
                     },
                     {
-                      "name": "volatility_pct",
-                      "expression": "`volatility_pct`"
-                    },
-                    {
                       "name": "beat_index",
                       "expression": "`beat_index`"
                     }
@@ -811,34 +765,6 @@
                     "numberFormat": "0.00"
                   },
                   {
-                    "fieldName": "volatility_pct",
-                    "booleanValues": [
-                      "false",
-                      "true"
-                    ],
-                    "imageUrlTemplate": "{{ @ }}",
-                    "imageTitleTemplate": "{{ @ }}",
-                    "imageWidth": "",
-                    "imageHeight": "",
-                    "linkUrlTemplate": "{{ @ }}",
-                    "linkTextTemplate": "{{ @ }}",
-                    "linkTitleTemplate": "{{ @ }}",
-                    "linkOpenInNewTab": true,
-                    "type": "float",
-                    "displayAs": "number",
-                    "visible": true,
-                    "order": 6,
-                    "title": "Volatility %",
-                    "allowSearch": false,
-                    "alignContent": "right",
-                    "allowHTML": false,
-                    "highlightLinks": false,
-                    "useMonospaceFont": false,
-                    "preserveWhitespace": false,
-                    "displayName": "volatility_pct",
-                    "numberFormat": "0.0"
-                  },
-                  {
                     "fieldName": "beat_index",
                     "booleanValues": [
                       "",
@@ -855,7 +781,7 @@
                     "type": "boolean",
                     "displayAs": "boolean",
                     "visible": true,
-                    "order": 7,
+                    "order": 6,
                     "title": "Beat it",
                     "allowSearch": false,
                     "alignContent": "right",

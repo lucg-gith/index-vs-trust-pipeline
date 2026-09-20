@@ -418,10 +418,11 @@ same span, and **volatility plus risk-adjusted return** aggregated over each win
 Five thin views over Gold, then one AI/BI dashboard page over two of them. Dashboard scope was
 cut from four pages to eight tiles on 2026-09-20: four counters, beat rate by horizon, a
 risk-against-reward scatter, the survivorship pair, and a top-ten table naming the managers.
-One counter per question: over 15 years 5.3% beat the index on total return, 5.3% out-grew it
-on price alone, 52.6% paid more income than it, and 0.0% beat it while also being less
-volatile. At 5 years the first two split — 15.6% against 8.9% — which is the dividends doing
-the work.
+Three counters, one per question: over 15 years 5.3% beat the index on total return, 5.3%
+out-grew it on price alone, and 52.6% paid more income than it. At 5 years the first two split
+— 15.6% against 8.9% — which is the dividends doing the work. **Volatility was removed from the
+dashboard on 2026-09-20** after three attempts at charting it; it stays computed in Gold, so
+the honest line is "I measured it and kept the page focused", not "I did not look at risk".
 Each tile owns its own dataset, so no click can recompute another tile. The three cuts by
 management group, manager structure and AIC sector stay as `v_beat_rate_by_cut` and are quoted
 aloud rather than drawn. Full detail in `specs/04_semantic/dashboard.md`.
