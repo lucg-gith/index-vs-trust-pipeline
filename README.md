@@ -38,7 +38,7 @@ Catalog `index-vs-trust-pipeline` on Databricks Unity Catalog, five schemas:
 |---|---|---|
 | `landing` | data exactly as the source sent it — no transformation of any kind | OVERWRITE |
 | `bronze` | same rows, every column STRING, nothing rejected | OVERWRITE |
-| `silver` | all quality work — currency, stub rejection, total return | MERGE |
+| `silver` | all quality work — scale repair, currency, total return | MERGE |
 | `gold` | dimensional model, SCD Type 2 built via MERGE | MERGE |
 | `semantic` | thin views feeding the dashboard | views |
 
@@ -99,7 +99,7 @@ Every cleaning rule is backed by evidence in the EDA notebook rather than assert
 ```
 00_landing/     ingest notebooks and schema DDL
 01_bronze/      all-STRING recast, plus the EDA that justifies Silver's rules
-02_silver/      currency normalisation, stub rejection, total return
+02_silver/      scale repair, currency normalisation, total return
 03_gold/        dimensions and facts
 04_semantic/    views for the dashboard
 data/           the committed source CSVs

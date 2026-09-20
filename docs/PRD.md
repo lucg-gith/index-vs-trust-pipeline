@@ -152,8 +152,10 @@ Silver takes **two tickers** from it: `BCPT` (158 rows to 2024-11) and `CSH` (11
 Four other tickers look delisted in this file but hold **one row each** — ADIG, BSIF, EOT,
 MNTN. They are noise, not histories.
 
-Its known defects no longer matter, because the tickers carrying them are superseded by
-Yahoo: the mixed month-end date labels, the ~25 mis-scaled tickers, and the `PCFT` zero.
+**Correction, 2026-09-20.** This file was described as the only dirty source. It is not.
+EDA found the **mis-scaled rows and the `PCFT` zero are in the Yahoo data too** — the CSV
+inherited them rather than introducing them. Only the mixed month-end date labels are
+genuinely a CSV-only defect, and they are moot because Yahoo bars are all month-start.
 
 ### `landing.yf_pull_log_raw` — the pull log
 
@@ -179,7 +181,7 @@ reference**. Five schemas.
 |---|---|---|---|
 | **Landing** | data exactly as it arrived; no transformation at all | OVERWRITE | "what did the source actually send?" |
 | **Bronze** | same rows, every column STRING, nothing rejected | OVERWRITE | one uniform contract for Silver |
-| **Silver** | *all* quality work — currency, stub rejection, total return | MERGE | "how do you handle bad data?" |
+| **Silver** | *all* quality work — scale repair, currency, total return | MERGE | "how do you handle bad data?" |
 | **Gold** | dimensional model, SCD2 via MERGE | MERGE | "why this model?" |
 | **Semantic** | thin views feeding the dashboard | views | keeps BI logic out of the model |
 
@@ -241,7 +243,7 @@ Specs live in `specs/<layer>/` and are gitignored — working notes, not deliver
 | 1 | **Landing** — 4 ingests plus schema | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 2 | **Bronze** — all-STRING recast | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 3 | **EDA** — evidence for Silver's rules | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
-| 4 | **Silver** — currency, stubs, total return | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| 4 | **Silver** — scale repair, currency, total return | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 5 | **Gold dims** — `dim_date`, `dim_ticker` SCD2 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 6 | **Gold facts** — monthly plus horizon | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 7 | **Semantic plus dashboard** | ⬜ | ⏸️ | ⏸️ | ⬜ | ⬜ |
@@ -271,21 +273,20 @@ Specs live in `specs/<layer>/` and are gitignored — working notes, not deliver
   both. It now tracks `main`.
 
 ### Step detail
-
-**Step 3 — EDA**
-**Step 3 — EDA** is next. Profile Bronze and produce the documented evidence behind every
-Silver rule. Against the
-Yahoo source that means: confirm the currency split and decide what happens to the 3 USD
-and 1 EUR trusts; show where the 4 stubs cut off and fix the minimum-history threshold;
-check the monthly bars for gaps and for the current partial month; and demonstrate that
-`Adj_Close` is unusable for UK trusts, which is what justifies building total return by
-hand. Output is a notebook in `01_bronze/eda/`.
+**Step 3 — EDA** *(next)*
+Five notebooks, one per Bronze table, producing the documented evidence behind every Silver
+rule. Spec in `specs/01_bronze/eda.md`. Read-only, not part of the scheduled Workflow.
+The headline finding is already in: the mis-scaled price rows are **in the Yahoo source**,
+affecting 36 of the 96 usable trusts inside the 15-year window, which reinstates the scale
+repair that the Landing spec had retired.
 
 **Step 4 — Silver**
-Currency normalisation, stub rejection, **total return via `LAG`** —
+Eight rules, each citing evidence from step 3: scale repair (the hardest — 36 symbols, 743
+corrupted rows), currency normalisation, stub rejection, the `PCFT` zero, partial-month
+exclusion, the month key, **total return via `LAG`** —
 `(Close_t + Dividends_t) / Close_{t-1} - 1`, compounded — applied identically to trusts and
 to SPY, then the union with the two archived delisted trusts. MERGE on the business key.
-Flat tables, no SCD2 here. Every rule cites step 3.
+Flat tables, no SCD2 here.
 
 **Step 5 — Gold dimensions**
 `dim_date` (~710 rows, 1967-12 onward) and `dim_ticker` with the SCD2 MERGE closing and
@@ -313,7 +314,8 @@ README (architecture diagram, how to run, results), 5–10 minute video, LinkedI
 | Risk | Mitigation |
 |---|---|
 | **yfinance is now a single point of failure.** It is an unofficial scraper and both sides of the comparison depend on it | The biggest risk in the project since 2026-09-19. Landing OVERWRITEs per run, so a bad pull replaces a good one. Mitigation: the pull log makes a degraded run obvious at a glance, and the verification cells assert exact symbol counts rather than "it ran" |
-| **The total-return calculation is now the hardest piece** and it is the number everything rests on | One formula, applied identically to trusts and SPY so any error cancels on both sides. Sanity-check against a known case: HFEL, 10 years, price return −25.8% against total return +39.0% |
+| **The scale repair is the hardest piece.** 36 of 96 trusts carry mis-scaled rows inside the window, 743 in total, and the factor differs by ticker — CGT a clean 10x, CLDN roughly 1400x | Detect per row against the median of neighbouring months, derive the ratio, rescale. Step 3 must prove the detection works before step 4 relies on it. Excluding the affected trusts instead would discard 37% of the sample |
+| **The total-return calculation is the number everything rests on** | One formula, applied identically to trusts and SPY so any error cancels on both sides. Sanity-check against a known case: HFEL, 10 years, price return −25.8% against total return +39.0% |
 | **Survivorship rests on 2 trusts** | Reframed: the claim is the mechanism, evidenced by Yahoo's 16 deletions, not a precise effect size. Stated as a limitation in the README rather than buried |
 | **SCD2 has no history on run 1** — the source is a snapshot | Expected and explained. Demo it live by changing a manager and re-running |
 | Time runs out before step 9 | Steps 1–6 clear "Ideal" on their own. Dashboard and video are bonus — cut from the end, not the middle |
