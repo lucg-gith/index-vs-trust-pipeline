@@ -289,12 +289,28 @@ Specs live in `specs/<layer>/` and are gitignored — working notes, not deliver
   2011-08 onward**, because nothing older is read by any metric and the pre-2011 data is
   12.4% corrupt against 0.67% inside the window — this shrinks `dim_date` from ~710 rows to
   ~181 and is a change to a previously agreed design point.
-- **Silver ran green first time**, 2026-09-20. `silver.monthly_performance` holds **16,770
-  rows across 104 tickers** (99 Yahoo trusts, 2 archive, 3 index), `silver.ticker` holds
-  **121**, and `silver.price_repair_log` holds **490** — 381 repaired, 109 deleted. The two
-  integrity checks both returned **0**: no non-positive close, and nothing left more than 2x
-  from its neighbourhood median. `PCFT` 2019-11 came back as 141.25 from a recorded 0.0,
-  `JEMA` 2022-12 as 84.877 from 42.87, and `CSH`'s maximum close fell from 112.8 to 2.945.
+- **Silver is verified.** `silver.monthly_performance` holds **15,877 rows across 99
+  tickers**, `silver.ticker` holds **121**, and `silver.price_repair_log` holds **415** —
+  318 repaired, 97 deleted. Both integrity checks return **0**: no non-positive close, and
+  nothing left more than 2x from its neighbourhood median. `PCFT` 2019-11 came back as
+  141.25 from a recorded 0.0, `JEMA` 2022-12 as 84.877 from 42.87, and `CSH`'s maximum close
+  fell from 112.8 to 2.945.
+- **Testing the built pipeline found two more defects, both now fixed (S2d, S2e).** First,
+  the mid-point repair could be taken from a bar whose `High` and `Low` are in different
+  units — `WWH` 2012-01 reads `H=773.00 L=72.50` — overwriting closes that were already
+  correct. A bar is now only used when `High <= 2 * Low`. Second, **five trusts cross a split
+  back-adjustment that Yahoo only half applied** (`MRC`, `MYI`, `NAS`, `PCT`, `WWH`): their
+  early months are in the pre-split unit and later months in the post-split one. Rescaling
+  was tried and failed, so they are excluded whole and named. Left in, `WWH` reported a
+  15-year return of **−50.9%** against a truthful figure near **+356%**. They are detected by
+  requiring the level to step by the trust's **own recorded split ratio**, which leaves a
+  genuine collapse like `CHRY` in 2022 untouched.
+- **Cross-validation that the return maths is right:** SPY, IVV and VOO independently give
+  10-year price returns of 252.9 / 252.5 / 253.3% against the documented +252%, and SPY's
+  15-year annualised volatility is **14.3%**, the textbook figure for the S&P 500.
+- **A documentation error was found and corrected:** HFEL's old "+39.0% total return" did not
+  reinvest dividends while the SPY "+312%" it was paired with did. The pipeline compounds
+  both sides identically and gives HFEL **+78.9%**.
 - **The job was submitted twice and returned identical counts** — 16,770 / 121 / 490 — with row counts equal to distinct business keys in every table. That is the MERGE doing its job, and the answer to "how do you guarantee no duplicates?"
 - **One prediction was wrong and the data was right:** distinct `management_group` is **53**,
   not 52, because 19 trusts carry an empty string rather than a null. The 52 real groups are
@@ -406,7 +422,7 @@ README (architecture diagram, how to run, results), 5–10 minute video, LinkedI
 |---|---|
 | **yfinance is now a single point of failure.** It is an unofficial scraper and both sides of the comparison depend on it | The biggest risk in the project since 2026-09-19. Landing OVERWRITEs per run, so a bad pull replaces a good one. Mitigation: the pull log makes a degraded run obvious at a glance, and the verification cells assert exact symbol counts rather than "it ran" |
 | **The scale repair is the hardest piece.** 36 of 96 trusts carry mis-scaled rows inside the window, 743 in total, and the factor differs by ticker — CGT a clean 10x, CLDN roughly 1400x | Detect per row against the median of neighbouring months, derive the ratio, rescale. Step 3 must prove the detection works before step 4 relies on it. Excluding the affected trusts instead would discard 37% of the sample |
-| **The total-return calculation is the number everything rests on** | One formula, applied identically to trusts and SPY so any error cancels on both sides. Sanity-check against a known case: HFEL, 10 years, price return −25.8% against total return +39.0% |
+| **The total-return calculation is the number everything rests on** | One formula, applied identically to trusts and SPY so any error cancels on both sides. Verified against Silver 2026-09-20: HFEL over 10 years, price return **−22.9%** against total return **+78.9%**, on **237.7p** of dividends. *The older +39.0% figure did not reinvest the dividends while the SPY figure it was paired with did — an apples-to-oranges the pipeline does not repeat.* |
 | **Survivorship rests on 2 trusts** | Reframed: the claim is the mechanism, evidenced by Yahoo's 16 deletions, not a precise effect size. Stated as a limitation in the README rather than buried |
 | **SCD2 has no history on run 1** — the source is a snapshot | Expected and explained. Demo it live by changing a manager and re-running |
 | Time runs out before step 9 | Steps 1–6 clear "Ideal" on their own. Dashboard and video are bonus — cut from the end, not the middle |
@@ -445,6 +461,6 @@ README (architecture diagram, how to run, results), 5–10 minute video, LinkedI
 | Why measure volatility too? | A trust that beats the index by swinging twice as hard has not beaten it in any way an investor would accept. Volatility is the standard deviation of monthly returns, annualised; dividing return by it gives reward per unit of risk. Same window, two more aggregates. |
 | Why not max drawdown or a Sharpe ratio? | Drawdown is a good number and I would add it next. Sharpe needs a risk-free rate, which is a whole extra source for one ratio. I kept the two measures that answer the question and left the rest out on purpose. |
 | Why a 1-year horizon as well? | It costs one row per trust and gives the recent picture to contrast against the 15-year one. Three years stays as the floor because 36 months is the minimum history to enter the facts at all. |
-| Why not use Yahoo's `Adj_Close`? | It is dividend-adjusted for SPY but not for UK trusts — 97 of 102 show an adjustment under 0.5%, including HFEL, which paid 232.6p on a 359p share. Using it would understate the trusts. |
+| Why not use Yahoo's `Adj_Close`? | It is dividend-adjusted for SPY but not for UK trusts — 97 of 102 show an adjustment under 0.5%, including HFEL, which paid 237.7p of dividends on a share that started the window at 343p. Using it would understate the trusts. |
 | How do you know delisted trusts are missing? | The pipeline records it. `landing.yf_pull_log_raw` holds a row per requested symbol, and 18 trusts return nothing — 16 with `No data found, symbol may be delisted`, 2 with an empty frame. |
 | What would you do with more time? | Source real manager history so the SCD2 has depth on day one, and find a source for the delisted trusts so survivorship rests on more than two. |
