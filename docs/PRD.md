@@ -295,6 +295,7 @@ Specs live in `specs/<layer>/` and are gitignored — working notes, not deliver
   integrity checks both returned **0**: no non-positive close, and nothing left more than 2x
   from its neighbourhood median. `PCFT` 2019-11 came back as 141.25 from a recorded 0.0,
   `JEMA` 2022-12 as 84.877 from 42.87, and `CSH`'s maximum close fell from 112.8 to 2.945.
+- **The job was submitted twice and returned identical counts** — 16,770 / 121 / 490 — with row counts equal to distinct business keys in every table. That is the MERGE doing its job, and the answer to "how do you guarantee no duplicates?"
 - **One prediction was wrong and the data was right:** distinct `management_group` is **53**,
   not 52, because 19 trusts carry an empty string rather than a null. The 52 real groups are
   intact. Whether to normalise `''` to null is **open for Gold**, where the column is used.
