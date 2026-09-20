@@ -1,7 +1,7 @@
 # PRD — Do UK investment trusts beat the S&P 500?
 
 **Last updated:** 2026-09-20
-**Current position:** Step 5 of 9 — Gold dimensions. **Silver is verified** on Databricks as
+**Current position:** Step 6 of 9 — Gold facts. **Silver is verified** on Databricks as
 of 2026-09-20: three notebooks ran green on the first attempt, 16,770 rows across 104
 tickers, and every expected number matched bar one (see below). Landing, Bronze and EDA are
 all verified too.
@@ -271,7 +271,7 @@ Specs live in `specs/<layer>/` and are gitignored — working notes, not deliver
 | 2 | **Bronze** — all-STRING recast | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 3 | **EDA** — evidence for Silver's rules | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 4 | **Silver** — scale repair, currency, total return | ✅ | ✅ | ✅ | ✅ | ✅ |
-| 5 | **Gold dims** — `dim_date`, `dim_ticker` SCD2 | ✅ | ✅ | 🔵 | ⬜ | ⬜ |
+| 5 | **Gold dims** — `dim_date`, `dim_ticker` SCD2 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 6 | **Gold facts** — monthly plus horizon, return + risk | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 7 | **Semantic plus dashboard** | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 8 | **Orchestration** — one monthly Workflow | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
