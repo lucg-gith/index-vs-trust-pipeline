@@ -3,7 +3,7 @@
 **Last updated:** 2026-09-20
 **Current position:** Step 8 of 9 — orchestration. **Step 7 is complete:** the five semantic
 views and the dashboard are both built and verified. The dashboard is a Databricks AI/BI page
-created through the Lakeview REST API and published — one page, seven tiles, five datasets,
+created through the Lakeview REST API and published — one page, eight tiles, five datasets,
 its definition version-controlled at `04_semantic/dashboard/beat_rate.lvdash.json`. A Power BI
 build sheet in the same folder reproduces it by hand, because the Power BI REST API cannot
 author report visuals. **Gold is complete and
@@ -284,7 +284,7 @@ Specs live in `specs/<layer>/` and are gitignored — working notes, not deliver
 | 5 | **Gold dims** — `dim_date`, `dim_ticker` SCD2 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 6 | **Gold facts** — monthly plus horizon, return + risk | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 7a | **Semantic** — five thin views over Gold | ✅ | ✅ | ✅ | ✅ | ✅ |
-| 7b | **Dashboard** — one page, seven tiles | ✅ | ✅ | ✅ | ✅ | ✅ |
+| 7b | **Dashboard** — one page, eight tiles | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 8 | **Orchestration** — one monthly Workflow | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 9 | **Presentation** — README, video, LinkedIn | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
@@ -414,8 +414,11 @@ same span, and **volatility plus risk-adjusted return** aggregated over each win
 
 **Step 7 — Semantic and dashboard** *(done)*
 Five thin views over Gold, then one AI/BI dashboard page over two of them. Dashboard scope was
-cut from four pages to seven tiles on 2026-09-20: three counters, beat rate by horizon, a
+cut from four pages to eight tiles on 2026-09-20: four counters, beat rate by horizon, a
 risk-against-reward scatter, the survivorship pair, and a top-ten table naming the managers.
+The counters answer the question, the catch, the counterweight and the reason: 5.3% beat the
+index over 15 years, 0.0% beat it while also being calmer, 52.6% paid more income than it, and
+the typical trust swung at 24.2% against its 14.2%.
 Each tile owns its own dataset, so no click can recompute another tile. The three cuts by
 management group, manager structure and AIC sector stay as `v_beat_rate_by_cut` and are quoted
 aloud rather than drawn. Full detail in `specs/04_semantic/dashboard.md`.

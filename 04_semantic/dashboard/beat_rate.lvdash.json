@@ -231,14 +231,14 @@
                 "showTitle": true,
                 "title": "Beat the S&P 500",
                 "showDescription": true,
-                "description": "Share of trusts whose total return exceeded the index over the same window"
+                "description": "% of trusts, on total return"
               }
             }
           },
           "position": {
             "x": 0,
             "y": 2,
-            "width": 4,
+            "width": 3,
             "height": 4
           }
         },
@@ -271,16 +271,58 @@
               },
               "frame": {
                 "showTitle": true,
-                "title": "Beat it AND were less volatile",
+                "title": "Beat it AND were calmer",
                 "showDescription": true,
-                "description": "The only unambiguous win: more return for less risk than simply buying the index"
+                "description": "% with more return and less risk"
               }
             }
           },
           "position": {
-            "x": 4,
+            "x": 3,
             "y": 2,
-            "width": 4,
+            "width": 3,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "kpi_out_yielded",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "kpi_headline",
+                  "fields": [
+                    {
+                      "name": "out_yielded_pct",
+                      "expression": "MAX(`out_yielded_pct`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "out_yielded_pct",
+                  "displayName": "% of trusts"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Paid more income than it",
+                "showDescription": true,
+                "description": "Cumulative dividends over the window, not an annual yield"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 2,
+            "width": 3,
             "height": 4
           }
         },
@@ -323,14 +365,14 @@
                 "showTitle": true,
                 "title": "Annualised volatility",
                 "showDescription": true,
-                "description": "How much the return bounces around. Higher is a rougher ride"
+                "description": "Median trust against the index"
               }
             }
           },
           "position": {
-            "x": 8,
+            "x": 9,
             "y": 2,
-            "width": 4,
+            "width": 3,
             "height": 4
           }
         },
