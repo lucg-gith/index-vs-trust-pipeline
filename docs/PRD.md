@@ -9,8 +9,10 @@ build sheet in the same folder reproduces it by hand, because the Power BI REST 
 author report visuals. **Gold is complete and
 the answer is in the warehouse:** only **5.3%** of
 UK investment trusts beat the S&P 500 over 15 years, **10.6%** over 10 — and **none** beat it
-over 15 or 10 years while also being less volatile. `gold.fact_horizon_performance` holds 445 rows across five horizons, with return, income,
-volatility, risk-adjusted return and three stored ranks. `gold.fact_monthly_performance`
+over 15 or 10 years while also being less volatile. `gold.fact_horizon_performance` holds 445 rows across five horizons, with return, growth,
+income, volatility, risk-adjusted return and three stored ranks. Growth — `price_return`,
+dividends excluded — was added 2026-09-20 so the dashboard can show return and growth side by
+side; the re-merge updated all 445 rows and inserted none. `gold.fact_monthly_performance`
 holds 15,516 rows with zero orphan keys against either dimension. **Silver is verified** on Databricks as
 of 2026-09-20: three notebooks ran green on the first attempt, 16,770 rows across 104
 tickers, and every expected number matched bar one (see below). Landing, Bronze and EDA are
@@ -416,9 +418,10 @@ same span, and **volatility plus risk-adjusted return** aggregated over each win
 Five thin views over Gold, then one AI/BI dashboard page over two of them. Dashboard scope was
 cut from four pages to eight tiles on 2026-09-20: four counters, beat rate by horizon, a
 risk-against-reward scatter, the survivorship pair, and a top-ten table naming the managers.
-The counters answer the question, the catch, the counterweight and the reason: 5.3% beat the
-index over 15 years, 0.0% beat it while also being calmer, 52.6% paid more income than it, and
-the typical trust swung at 24.2% against its 14.2%.
+One counter per question: over 15 years 5.3% beat the index on total return, 5.3% out-grew it
+on price alone, 52.6% paid more income than it, and 0.0% beat it while also being less
+volatile. At 5 years the first two split — 15.6% against 8.9% — which is the dividends doing
+the work.
 Each tile owns its own dataset, so no click can recompute another tile. The three cuts by
 management group, manager structure and AIC sector stay as `v_beat_rate_by_cut` and are quoted
 aloud rather than drawn. Full detail in `specs/04_semantic/dashboard.md`.

@@ -231,9 +231,9 @@
               },
               "frame": {
                 "showTitle": true,
-                "title": "Beat the S&P 500",
+                "title": "Beat it on total return",
                 "showDescription": true,
-                "description": "% of trusts, on total return"
+                "description": "Price growth plus dividends, compounded"
               }
             }
           },
@@ -275,7 +275,49 @@
                 "showTitle": true,
                 "title": "Beat it AND were calmer",
                 "showDescription": true,
-                "description": "% with more return and less risk"
+                "description": "More return for less risk than the index"
+              }
+            }
+          },
+          "position": {
+            "x": 9,
+            "y": 2,
+            "width": 3,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "kpi_out_grew",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "kpi_headline",
+                  "fields": [
+                    {
+                      "name": "out_grew_pct",
+                      "expression": "MAX(`out_grew_pct`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "out_grew_pct",
+                  "displayName": "% of trusts"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Out-grew it on price",
+                "showDescription": true,
+                "description": "Share price alone, before any dividends"
               }
             }
           },
@@ -317,62 +359,12 @@
                 "showTitle": true,
                 "title": "Paid more income than it",
                 "showDescription": true,
-                "description": "Cumulative dividends over the window, not an annual yield"
+                "description": "Cumulative dividends, not an annual yield"
               }
             }
           },
           "position": {
             "x": 6,
-            "y": 2,
-            "width": 3,
-            "height": 4
-          }
-        },
-        {
-          "widget": {
-            "name": "kpi_volatility",
-            "queries": [
-              {
-                "name": "main_query",
-                "query": {
-                  "datasetName": "kpi_headline",
-                  "fields": [
-                    {
-                      "name": "median_volatility_pct",
-                      "expression": "MAX(`median_volatility_pct`)"
-                    },
-                    {
-                      "name": "index_volatility_pct",
-                      "expression": "MAX(`index_volatility_pct`)"
-                    }
-                  ],
-                  "disaggregated": false
-                }
-              }
-            ],
-            "spec": {
-              "version": 2,
-              "widgetType": "counter",
-              "encodings": {
-                "value": {
-                  "fieldName": "median_volatility_pct",
-                  "displayName": "Median trust"
-                },
-                "target": {
-                  "fieldName": "index_volatility_pct",
-                  "displayName": "S&P 500"
-                }
-              },
-              "frame": {
-                "showTitle": true,
-                "title": "Annualised volatility",
-                "showDescription": true,
-                "description": "Median trust against the index"
-              }
-            }
-          },
-          "position": {
-            "x": 9,
             "y": 2,
             "width": 3,
             "height": 4
