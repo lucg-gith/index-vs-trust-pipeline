@@ -80,10 +80,10 @@
       "displayName": "Top ten trusts and who ran them",
       "queryLines": [
         "-- Top 20 by return with the index ranked among them, so where it lands is always visible.\n",
-        "-- An index has no manager; that absence is the comparison, so it shows as a dash.\n",
+        "-- An index has no manager; that absence is the comparison, so the cell says so.\n",
         "SELECT rank_by_return, ticker, name,\n",
-        "       CASE WHEN entity_type = 'Index' THEN '—' ELSE manager END          AS manager,\n",
-        "       CASE WHEN entity_type = 'Index' THEN '—' ELSE management_group END AS management_group,\n",
+        "       CASE WHEN entity_type = 'Index' THEN 'INDEX' ELSE manager END          AS manager,\n",
+        "       CASE WHEN entity_type = 'Index' THEN 'INDEX' ELSE management_group END AS management_group,\n",
         "       annualised_return_pct, volatility_pct, beat_index\n",
         "FROM `index-vs-trust-pipeline`.semantic.v_leaderboard\n",
         "WHERE horizon_years = :horizon\n",
