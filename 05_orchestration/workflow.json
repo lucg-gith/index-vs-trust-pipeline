@@ -1,0 +1,352 @@
+{
+  "name": "index-vs-trust-pipeline",
+  "description": "Landing to Semantic, monthly. Every task is one notebook; edges are table-level.",
+  "max_concurrent_runs": 1,
+  "timeout_seconds": 3600,
+  "git_source": {
+    "git_url": "https://github.com/lucg-gith/index-vs-trust-pipeline",
+    "git_provider": "gitHub",
+    "git_branch": "main"
+  },
+  "schedule": {
+    "quartz_cron_expression": "0 0 6 2 * ?",
+    "timezone_id": "Europe/London",
+    "pause_status": "UNPAUSED"
+  },
+  "email_notifications": {
+    "on_failure": [
+      "garrelucia@gmail.com"
+    ]
+  },
+  "tasks": [
+    {
+      "task_key": "create_landing_schema",
+      "notebook_task": {
+        "notebook_path": "00_landing/ddl/create_landing_schema",
+        "source": "GIT"
+      },
+      "timeout_seconds": 1800
+    },
+    {
+      "task_key": "ingest_trusts",
+      "notebook_task": {
+        "notebook_path": "00_landing/etl/ingest_trusts",
+        "source": "GIT"
+      },
+      "timeout_seconds": 1800,
+      "depends_on": [
+        {
+          "task_key": "create_landing_schema"
+        }
+      ]
+    },
+    {
+      "task_key": "ingest_trust_prices_csv",
+      "notebook_task": {
+        "notebook_path": "00_landing/etl/ingest_trust_prices_csv",
+        "source": "GIT"
+      },
+      "timeout_seconds": 1800,
+      "depends_on": [
+        {
+          "task_key": "create_landing_schema"
+        }
+      ]
+    },
+    {
+      "task_key": "ingest_trust_prices_yf",
+      "notebook_task": {
+        "notebook_path": "00_landing/etl/ingest_trust_prices_yf",
+        "source": "GIT"
+      },
+      "timeout_seconds": 1800,
+      "depends_on": [
+        {
+          "task_key": "create_landing_schema"
+        }
+      ],
+      "max_retries": 1,
+      "min_retry_interval_millis": 60000
+    },
+    {
+      "task_key": "ingest_index_prices",
+      "notebook_task": {
+        "notebook_path": "00_landing/etl/ingest_index_prices",
+        "source": "GIT"
+      },
+      "timeout_seconds": 1800,
+      "depends_on": [
+        {
+          "task_key": "create_landing_schema"
+        }
+      ],
+      "max_retries": 1,
+      "min_retry_interval_millis": 60000
+    },
+    {
+      "task_key": "create_bronze_schema",
+      "notebook_task": {
+        "notebook_path": "01_bronze/ddl/create_bronze_schema",
+        "source": "GIT"
+      },
+      "timeout_seconds": 1800,
+      "depends_on": [
+        {
+          "task_key": "create_landing_schema"
+        }
+      ]
+    },
+    {
+      "task_key": "build_trusts",
+      "notebook_task": {
+        "notebook_path": "01_bronze/etl/build_trusts",
+        "source": "GIT"
+      },
+      "timeout_seconds": 1800,
+      "depends_on": [
+        {
+          "task_key": "ingest_trusts"
+        },
+        {
+          "task_key": "create_bronze_schema"
+        }
+      ]
+    },
+    {
+      "task_key": "build_trust_prices_csv",
+      "notebook_task": {
+        "notebook_path": "01_bronze/etl/build_trust_prices_csv",
+        "source": "GIT"
+      },
+      "timeout_seconds": 1800,
+      "depends_on": [
+        {
+          "task_key": "ingest_trust_prices_csv"
+        },
+        {
+          "task_key": "create_bronze_schema"
+        }
+      ]
+    },
+    {
+      "task_key": "build_trust_prices_yf",
+      "notebook_task": {
+        "notebook_path": "01_bronze/etl/build_trust_prices_yf",
+        "source": "GIT"
+      },
+      "timeout_seconds": 1800,
+      "depends_on": [
+        {
+          "task_key": "ingest_trust_prices_yf"
+        },
+        {
+          "task_key": "create_bronze_schema"
+        }
+      ]
+    },
+    {
+      "task_key": "build_index_prices",
+      "notebook_task": {
+        "notebook_path": "01_bronze/etl/build_index_prices",
+        "source": "GIT"
+      },
+      "timeout_seconds": 1800,
+      "depends_on": [
+        {
+          "task_key": "ingest_index_prices"
+        },
+        {
+          "task_key": "create_bronze_schema"
+        }
+      ]
+    },
+    {
+      "task_key": "build_yf_pull_log",
+      "notebook_task": {
+        "notebook_path": "01_bronze/etl/build_yf_pull_log",
+        "source": "GIT"
+      },
+      "timeout_seconds": 1800,
+      "depends_on": [
+        {
+          "task_key": "ingest_trust_prices_yf"
+        },
+        {
+          "task_key": "ingest_index_prices"
+        },
+        {
+          "task_key": "create_bronze_schema"
+        }
+      ]
+    },
+    {
+      "task_key": "create_silver_schema",
+      "notebook_task": {
+        "notebook_path": "02_silver/ddl/create_silver_schema",
+        "source": "GIT"
+      },
+      "timeout_seconds": 1800,
+      "depends_on": [
+        {
+          "task_key": "create_bronze_schema"
+        }
+      ]
+    },
+    {
+      "task_key": "build_monthly_performance",
+      "notebook_task": {
+        "notebook_path": "02_silver/etl/build_monthly_performance",
+        "source": "GIT"
+      },
+      "timeout_seconds": 1800,
+      "depends_on": [
+        {
+          "task_key": "build_trust_prices_yf"
+        },
+        {
+          "task_key": "build_trust_prices_csv"
+        },
+        {
+          "task_key": "build_index_prices"
+        },
+        {
+          "task_key": "build_yf_pull_log"
+        },
+        {
+          "task_key": "create_silver_schema"
+        }
+      ]
+    },
+    {
+      "task_key": "build_ticker",
+      "notebook_task": {
+        "notebook_path": "02_silver/etl/build_ticker",
+        "source": "GIT"
+      },
+      "timeout_seconds": 1800,
+      "depends_on": [
+        {
+          "task_key": "build_monthly_performance"
+        },
+        {
+          "task_key": "build_trusts"
+        },
+        {
+          "task_key": "build_yf_pull_log"
+        }
+      ]
+    },
+    {
+      "task_key": "create_gold_schema",
+      "notebook_task": {
+        "notebook_path": "03_gold/ddl/create_gold_schema",
+        "source": "GIT"
+      },
+      "timeout_seconds": 1800,
+      "depends_on": [
+        {
+          "task_key": "create_silver_schema"
+        }
+      ]
+    },
+    {
+      "task_key": "build_dim_date",
+      "notebook_task": {
+        "notebook_path": "03_gold/etl/build_dim_date",
+        "source": "GIT"
+      },
+      "timeout_seconds": 1800,
+      "depends_on": [
+        {
+          "task_key": "build_monthly_performance"
+        },
+        {
+          "task_key": "create_gold_schema"
+        }
+      ]
+    },
+    {
+      "task_key": "build_dim_ticker",
+      "notebook_task": {
+        "notebook_path": "03_gold/etl/build_dim_ticker",
+        "source": "GIT"
+      },
+      "timeout_seconds": 1800,
+      "depends_on": [
+        {
+          "task_key": "build_monthly_performance"
+        },
+        {
+          "task_key": "build_ticker"
+        },
+        {
+          "task_key": "create_gold_schema"
+        }
+      ]
+    },
+    {
+      "task_key": "build_fact_monthly_performance",
+      "notebook_task": {
+        "notebook_path": "03_gold/etl/build_fact_monthly_performance",
+        "source": "GIT"
+      },
+      "timeout_seconds": 1800,
+      "depends_on": [
+        {
+          "task_key": "build_dim_date"
+        },
+        {
+          "task_key": "build_dim_ticker"
+        }
+      ]
+    },
+    {
+      "task_key": "build_fact_horizon_performance",
+      "notebook_task": {
+        "notebook_path": "03_gold/etl/build_fact_horizon_performance",
+        "source": "GIT"
+      },
+      "timeout_seconds": 1800,
+      "depends_on": [
+        {
+          "task_key": "build_dim_ticker"
+        },
+        {
+          "task_key": "build_monthly_performance"
+        }
+      ]
+    },
+    {
+      "task_key": "create_semantic_schema",
+      "notebook_task": {
+        "notebook_path": "04_semantic/ddl/create_semantic_schema",
+        "source": "GIT"
+      },
+      "timeout_seconds": 1800,
+      "depends_on": [
+        {
+          "task_key": "create_gold_schema"
+        }
+      ]
+    },
+    {
+      "task_key": "create_views",
+      "notebook_task": {
+        "notebook_path": "04_semantic/views/create_views",
+        "source": "GIT"
+      },
+      "timeout_seconds": 1800,
+      "depends_on": [
+        {
+          "task_key": "build_fact_monthly_performance"
+        },
+        {
+          "task_key": "build_fact_horizon_performance"
+        },
+        {
+          "task_key": "create_semantic_schema"
+        }
+      ]
+    }
+  ]
+}
