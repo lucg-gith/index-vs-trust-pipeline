@@ -1,8 +1,8 @@
 # PRD — Do UK investment trusts beat the S&P 500?
 
 **Last updated:** 2026-09-20
-**Current position:** Step 2 of 9 — Bronze, rebuilt and awaiting its first run. **Landing is verified:**
-all five notebooks ran green on Databricks on 2026-09-20 and every check matches. The price
+**Current position:** Step 3 of 9 — EDA. **Landing and Bronze are both verified** on
+Databricks as of 2026-09-20; every check in both specs matched. The price
 source changed on 2026-09-19 from the CSV to Yahoo Finance, which adds dividends and history
 back to 1967. Bronze was deleted the same day and rebuilt on 2026-09-20 against the new
 Landing: six notebooks, each casting the live schema to STRING rather than naming columns.
@@ -239,7 +239,7 @@ Specs live in `specs/<layer>/` and are gitignored — working notes, not deliver
 |---|---|:--:|:--:|:--:|:--:|:--:|
 | 0 | **Design** — close the design tree | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 1 | **Landing** — 4 ingests plus schema | ✅ | ✅ | ✅ | ✅ | ✅ |
-| 2 | **Bronze** — all-STRING recast | ✅ | ✅ | ✅ | ✅ | ⬜ |
+| 2 | **Bronze** — all-STRING recast | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 3 | **EDA** — evidence for Silver's rules | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 4 | **Silver** — currency, stubs, total return | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 5 | **Gold dims** — `dim_date`, `dim_ticker` SCD2 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
@@ -250,17 +250,22 @@ Specs live in `specs/<layer>/` and are gitignored — working notes, not deliver
 
 ### Open at this moment
 
-- **Landing is verified.** Ran on Databricks 2026-09-20 as a five-task chained job, all
+- **Landing and Bronze are both verified.** Landing ran 2026-09-20 as a five-task chained job, all
   SUCCESS. Landed: 120 metadata rows, 16,357 CSV archive rows, 35,121 Yahoo trust rows
   across 100 symbols, 915 index rows across 3, and 122 pull-log rows. Two spec numbers were
   wrong and are corrected: `APAX` and `HET` return an empty frame rather than data, so it is
   100 OK / 18 NODATA, not 102 / 16; and `yfinance` reaches far deeper than the chart API
   suggested, back to **1967-12**, so the trust table is 35,121 rows rather than ~24,600.
   The design conclusions are unchanged — 96 usable trusts, depth split 75 / 10 / 10 / 1.
-- **Bronze was deleted on 2026-09-19** and is being redone from scratch. All four notebooks
-  targeted Landing tables that have since been renamed or replaced, so patching them was
-  worth less than rebuilding. `specs/01_bronze/bronze.md` is marked SUPERSEDED and lists
-  what the rewrite has to cover. The folder skeleton survives; only the notebooks are gone.
+  A second full run returned identical counts, including the pull log holding at 122 rather
+  than doubling, which proves the delete-then-append slice logic.
+- **Bronze ran green on its first attempt**, six tasks fanning out from the schema task.
+  Row parity with Landing on all five tables, every column STRING, and the checks that
+  matter by *not* changing: `PCFT` still `0.000`, 2 blank tickers intact, 19 NODATA rows
+  intact, `Capital_Gains` present on the index table and absent on the trust table.
+- **The old Bronze was deleted and rebuilt** on 2026-09-19/20, because all four notebooks
+  targeted Landing tables that had been renamed or replaced. The agreement it was built
+  under is kept as `specs/01_bronze/bronze-superseded-2026-09-18.md`.
 - **The Databricks Git folder was re-cloned on 2026-09-20.** Its old copy had truncated
   markdown cells and uncommitted run outputs, which blocked the pull; a clean clone fixed
   both. It now tracks `main`.
@@ -268,7 +273,8 @@ Specs live in `specs/<layer>/` and are gitignored — working notes, not deliver
 ### Step detail
 
 **Step 3 — EDA**
-Profile Bronze and produce the documented evidence behind every Silver rule. Against the
+**Step 3 — EDA** is next. Profile Bronze and produce the documented evidence behind every
+Silver rule. Against the
 Yahoo source that means: confirm the currency split and decide what happens to the 3 USD
 and 1 EUR trusts; show where the 4 stubs cut off and fix the minimum-history threshold;
 check the monthly bars for gaps and for the current partial month; and demonstrate that
