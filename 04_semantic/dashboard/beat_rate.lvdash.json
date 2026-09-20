@@ -79,14 +79,16 @@
       "name": "winners",
       "displayName": "Top ten trusts and who ran them",
       "queryLines": [
-        "-- Trusts only. An index has no manager, which is the point of the comparison.\n",
-        "SELECT rank_by_return, ticker, name, manager, management_group,\n",
-        "       annualised_return_pct, volatility_pct, risk_adjusted_return, beat_index\n",
+        "-- Top 20 by return with the index ranked among them, so where it lands is always visible.\n",
+        "-- An index has no manager; that absence is the comparison, so it shows as a dash.\n",
+        "SELECT rank_by_return, ticker, name,\n",
+        "       CASE WHEN entity_type = 'Index' THEN '—' ELSE manager END          AS manager,\n",
+        "       CASE WHEN entity_type = 'Index' THEN '—' ELSE management_group END AS management_group,\n",
+        "       annualised_return_pct, volatility_pct, beat_index\n",
         "FROM `index-vs-trust-pipeline`.semantic.v_leaderboard\n",
         "WHERE horizon_years = :horizon\n",
-        "  AND entity_type = 'Trust'\n",
-        "ORDER BY rank_by_return\n",
-        "LIMIT 10"
+        "  AND (rank_by_return <= 20 OR ticker = 'SPY')\n",
+        "ORDER BY rank_by_return"
       ],
       "parameters": [
         {
@@ -610,7 +612,7 @@
             "x": 0,
             "y": 13,
             "width": 4,
-            "height": 7
+            "height": 10
           }
         },
         {
@@ -666,67 +668,235 @@
                 "columns": [
                   {
                     "fieldName": "rank_by_return",
-                    "displayName": "#",
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true,
                     "type": "integer",
+                    "displayAs": "number",
+                    "visible": true,
                     "order": 0,
-                    "visible": true
+                    "title": "#",
+                    "allowSearch": false,
+                    "alignContent": "right",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "displayName": "rank_by_return",
+                    "numberFormat": "0"
                   },
                   {
                     "fieldName": "ticker",
-                    "displayName": "Ticker",
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true,
                     "type": "string",
+                    "displayAs": "string",
+                    "visible": true,
                     "order": 1,
-                    "visible": true
+                    "title": "Ticker",
+                    "allowSearch": false,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "displayName": "ticker"
                   },
                   {
                     "fieldName": "name",
-                    "displayName": "Trust",
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true,
                     "type": "string",
+                    "displayAs": "string",
+                    "visible": true,
                     "order": 2,
-                    "visible": true
+                    "title": "Trust",
+                    "allowSearch": false,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "displayName": "name"
                   },
                   {
                     "fieldName": "manager",
-                    "displayName": "Manager",
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true,
                     "type": "string",
+                    "displayAs": "string",
+                    "visible": true,
                     "order": 3,
-                    "visible": true
+                    "title": "Manager",
+                    "allowSearch": false,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "displayName": "manager"
                   },
                   {
                     "fieldName": "management_group",
-                    "displayName": "Management group",
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true,
                     "type": "string",
+                    "displayAs": "string",
+                    "visible": true,
                     "order": 4,
-                    "visible": true
+                    "title": "Management group",
+                    "allowSearch": false,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "displayName": "management_group"
                   },
                   {
                     "fieldName": "annualised_return_pct",
-                    "displayName": "Annualised return %",
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true,
                     "type": "float",
+                    "displayAs": "number",
+                    "visible": true,
                     "order": 5,
-                    "visible": true
+                    "title": "Annualised return %",
+                    "allowSearch": false,
+                    "alignContent": "right",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "displayName": "annualised_return_pct",
+                    "numberFormat": "0.00"
                   },
                   {
                     "fieldName": "volatility_pct",
-                    "displayName": "Volatility %",
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true,
                     "type": "float",
+                    "displayAs": "number",
+                    "visible": true,
                     "order": 6,
-                    "visible": true
+                    "title": "Volatility %",
+                    "allowSearch": false,
+                    "alignContent": "right",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "displayName": "volatility_pct",
+                    "numberFormat": "0.0"
                   },
                   {
                     "fieldName": "beat_index",
-                    "displayName": "Beat the index",
+                    "booleanValues": [
+                      "",
+                      "yes"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true,
                     "type": "boolean",
+                    "displayAs": "boolean",
+                    "visible": true,
                     "order": 7,
-                    "visible": true
+                    "title": "Beat it",
+                    "allowSearch": false,
+                    "alignContent": "right",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "displayName": "beat_index"
                   }
                 ]
               },
+              "invisibleColumns": [],
+              "allowHTMLByDefault": false,
+              "itemsPerPage": 25,
+              "condensed": true,
+              "withRowNumber": false,
               "frame": {
                 "showTitle": true,
-                "title": "Who ran the winners",
+                "title": "Top 20 by return, with the index ranked in",
                 "showDescription": true,
-                "description": "Display only — ranking the fact table and then asking what share beat the index would always answer 100%. Gaps in the rank are the index trackers: at 15 years SPY, IVV and VOO hold 5, 6 and 7"
+                "description": "Display only. Four trusts sit above the index at 15 years; ranks 5, 6 and 7 are VOO, IVV and SPY"
               }
             }
           },
@@ -734,7 +904,7 @@
             "x": 4,
             "y": 13,
             "width": 8,
-            "height": 7
+            "height": 10
           }
         }
       ]
