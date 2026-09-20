@@ -1,8 +1,9 @@
 # PRD — Do UK investment trusts beat the S&P 500?
 
 **Last updated:** 2026-09-20
-**Current position:** Step 3 of 9 — EDA. **Landing and Bronze are both verified** on
-Databricks as of 2026-09-20; every check in both specs matched. The price
+**Current position:** Step 4 of 9 — Silver. **Landing, Bronze and EDA are all verified** on
+Databricks as of 2026-09-20. EDA found that the mis-scaled rows come from Yahoo, not the
+CSV, which reinstated the scale repair. The price
 source changed on 2026-09-19 from the CSV to Yahoo Finance, which adds dividends and history
 back to 1967. Bronze was deleted the same day and rebuilt on 2026-09-20 against the new
 Landing: six notebooks, each casting the live schema to STRING rather than naming columns.
@@ -242,7 +243,7 @@ Specs live in `specs/<layer>/` and are gitignored — working notes, not deliver
 | 0 | **Design** — close the design tree | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 1 | **Landing** — 4 ingests plus schema | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 2 | **Bronze** — all-STRING recast | ✅ | ✅ | ✅ | ✅ | ✅ |
-| 3 | **EDA** — evidence for Silver's rules | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| 3 | **EDA** — evidence for Silver's rules | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 4 | **Silver** — scale repair, currency, total return | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 5 | **Gold dims** — `dim_date`, `dim_ticker` SCD2 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 6 | **Gold facts** — monthly plus horizon | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
@@ -265,6 +266,12 @@ Specs live in `specs/<layer>/` and are gitignored — working notes, not deliver
   Row parity with Landing on all five tables, every column STRING, and the checks that
   matter by *not* changing: `PCFT` still `0.000`, 2 blank tickers intact, 19 NODATA rows
   intact, `Capital_Gains` present on the index table and absent on the trust table.
+- **EDA ran green on all five notebooks.** Three predictions matched exactly (horizon
+  ceilings 75 / 85 / 95 / 96, the pull log reconciling 100 of 100 against the price rows,
+  and 97 of 100 priced trusts having a manager). One did not: **`CSH` mixes pounds and
+  pence** — 10 of its 112 months sit near 105 while the rest sit near 1.05. That is half
+  the delisted cohort, so Silver has to fix it before the survivorship number means
+  anything. Recorded as finding 2.3b.
 - **The old Bronze was deleted and rebuilt** on 2026-09-19/20, because all four notebooks
   targeted Landing tables that had been renamed or replaced. The agreement it was built
   under is kept as `specs/01_bronze/bronze-superseded-2026-09-18.md`.
