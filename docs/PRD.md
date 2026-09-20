@@ -1,24 +1,45 @@
 # PRD — Do UK investment trusts beat the S&P 500?
 
 **Last updated:** 2026-09-20
-**Current position:** Step 4 of 9 — Silver. **Landing, Bronze and EDA are all verified** on
-Databricks as of 2026-09-20. EDA found that the mis-scaled rows come from Yahoo, not the
-CSV, which reinstated the scale repair. The price
-source changed on 2026-09-19 from the CSV to Yahoo Finance, which adds dividends and history
-back to 1967. Bronze was deleted the same day and rebuilt on 2026-09-20 against the new
-Landing: six notebooks, each casting the live schema to STRING rather than naming columns.
+**Current position:** Step 4 of 9 — Silver. **Spec approved and the three notebooks are
+built**; verification on Databricks is the outstanding item. Landing, Bronze and EDA are all
+**verified** on Databricks as of 2026-09-20.
+
+Writing the Silver spec re-derived the scale-repair evidence against the warehouse and
+**overturned two EDA claims**: the corrupt prices are not clean powers of ten, and the true
+cost of cleaning is 0.67% rather than 2.43%, because most bad rows are repairable from their
+own high and low. It also added a new decision — Silver keeps only **2011-08 onward**, which
+shrinks `dim_date` from ~710 rows to ~181. The price source changed on 2026-09-19 from the
+CSV to Yahoo Finance, which adds dividends and history; Bronze was rebuilt the same week
+against the new Landing.
 
 ---
 
 ## 1. The question
 
-> **What percentage of UK investment trusts actually beat the S&P 500?**
+> **What percentage of UK investment trusts actually beat the S&P 500 — and did they
+> take more risk to do it?**
 
-Not "which one won" — the **beat rate**: the share of trusts that outperformed the index
-over a given window. If 30 of 98 trusts beat it over 10 years, the beat rate is 30%.
+Two instruments compared head to head: a **UK investment trust**, a listed fund where a
+paid manager picks the holdings, against the **S&P 500** bought through SPY, which follows
+a rule and charges almost nothing. The trust has to beat the index by enough to justify
+both its fee and its risk.
 
-Reported at **four horizons — 15, 10, 5 and 3 years** — and **twice at each horizon**:
+**Return.** Not "which one won" — the **beat rate**: the share of trusts that outperformed
+the index over a given window. If 30 of 98 trusts beat it over 10 years, the beat rate is
+30%. Yield here means **total return** — price growth plus dividends, compounded — not
+dividend yield.
+
+**Risk.** Return alone flatters whoever took the most risk, so every horizon also carries
+**annualised volatility** (`STDDEV(monthly_return) × √12` — how much the return bounces
+around) and **risk-adjusted return** (annualised return ÷ volatility — reward per unit of
+bounce). A trust that beat SPY by swinging twice as hard did not really beat it.
+*Added 2026-09-20; max drawdown and hit rate were deliberately left out to keep scope down.*
+
+Reported at **five horizons — 15, 10, 5, 3 and 1 years** — and **twice at each horizon**:
 once including delisted trusts, once excluding them.
+
+The full objective, including the four dashboard cuts, is in `specs/OBJECTIVE.md`.
 
 ### Why report it twice
 
@@ -82,7 +103,8 @@ This is still the project's main analytical contribution and the main thing to d
   recovered from the CSV archive. 75 of them reach back 15 years or more.
 - The S&P 500 via SPY, with IVV/VOO as a secondary credibility check.
 - **Total return on both sides** — price plus dividends, computed in Silver.
-- Beat rate at 4 horizons times 2 survivorship treatments.
+- Beat rate at 5 horizons times 2 survivorship treatments.
+- **Risk as well as return** — annualised volatility and risk-adjusted return at every horizon, for trusts and index alike.
 - SCD2 history on trust manager, management group and listing status.
 
 ### Out, and why
@@ -205,13 +227,16 @@ dim_ticker (SCD2) ──┤     fact_horizon_performance
   **A new version row opens when `manager`, `management_group` or `status` changes.**
   SPY never versions.
 - **`dim_date`** — monthly, `month_key` a plain `YYYYMM` INT, not a hash: readable in
-  output and sorts naturally. **Now spans 1967-12 to the current month (~710 rows), not the
-  181 the CSV implied** — SPY reaches back to 1993 and 75 trusts to 2011 or earlier.
+  output and sorts naturally. **Spans 2011-08 to the latest complete month (~181 rows)**,
+  trimmed to the study window by Silver rule S3 — Yahoo reaches back to 1967-12, but the
+  longest horizon is 15 years and the pre-2011 data is 12.4% corrupt against 0.67% inside
+  the window. *Revised 2026-09-20; it briefly read ~710 rows from 1967-12.*
 - **`fact_monthly_performance`** — one row per (ticker, month). Carries the **versioned**
   `ticker_key`, resolved once at build time, so "returns while managed by X" is a plain
   join with no date-range condition to forget.
-- **`fact_horizon_performance`** — one row per (ticker, horizon). `total_return`,
-  `annualised_return`, `index_return_same_period`, `beat_index`.
+- **`fact_horizon_performance`** — one row per (ticker, horizon), 5 horizons. `total_return`,
+  `annualised_return`, `index_return_same_period`, `beat_index`, and the risk pair added
+  2026-09-20: `volatility`, `index_volatility_same_period`, `risk_adjusted_return`.
 
 ### Why the SCD2 is on the manager
 
@@ -244,15 +269,44 @@ Specs live in `specs/<layer>/` and are gitignored — working notes, not deliver
 | 1 | **Landing** — 4 ingests plus schema | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 2 | **Bronze** — all-STRING recast | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 3 | **EDA** — evidence for Silver's rules | ✅ | ✅ | ✅ | ✅ | ✅ |
-| 4 | **Silver** — scale repair, currency, total return | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| 4 | **Silver** — scale repair, currency, total return | ✅ | ✅ | ✅ | ✅ | 🔵 |
 | 5 | **Gold dims** — `dim_date`, `dim_ticker` SCD2 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
-| 6 | **Gold facts** — monthly plus horizon | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
-| 7 | **Semantic plus dashboard** | ⬜ | ⏸️ | ⏸️ | ⬜ | ⬜ |
+| 6 | **Gold facts** — monthly plus horizon, return + risk | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| 7 | **Semantic plus dashboard** | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 8 | **Orchestration** — one monthly Workflow | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 9 | **Presentation** — README, video, LinkedIn | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ### Open at this moment
 
+- **Silver spec approved 2026-09-20, notebooks built** — `specs/02_silver/silver.md`,
+  eleven rules closing all eight items EDA left open. Two things in it are new rather than
+  merely chosen. First, the scale-repair rule is now **evidence-led rather than
+  threshold-led**: a `Close` outside its own bar's `High`–`Low` is impossible, so those rows
+  are provably corrupt *and* repairable from the same row, and the repair is validated
+  out-of-sample against the next month's `Open` (2.17% error, against 447% uncorrected).
+  295 repaired, 107 deleted, 0.67% of the study window lost. Second, **Silver keeps only
+  2011-08 onward**, because nothing older is read by any metric and the pre-2011 data is
+  12.4% corrupt against 0.67% inside the window — this shrinks `dim_date` from ~710 rows to
+  ~181 and is a change to a previously agreed design point.
+- **Rule S2b was added during the build**, because the spec's own verification cell failed on
+  its first dry run. It found `JEMA` 2022-12 — `low 79.75, high 90.00, close 42.87` — corrupt
+  but off by almost exactly 2x, so the neighbourhood test let it through. Detecting a close
+  that also sits more than 25% outside **its own bar** catches 89 more rows across 17 trusts.
+  Compounded returns are unchanged to one decimal place on all 16 affected trusts, because a
+  corrupt month cancels itself; **volatility was overstated by up to 2.4x** (`PIN` 89.2% vs
+  36.7%, `CLDN` 44.6% vs 19.0%). Since the objective now asks about risk as well as return,
+  that is the difference between answering the question and answering it wrongly.
+- **Two EDA claims were disproved** in the process and corrected in `specs/01_bronze/eda.md`:
+  the corrupt prices are not clean powers of ten, and cleaning costs 0.67%, not 2.43%.
+- The user asked for **both price return and total return** on every row, so the dividend-less
+  archive trusts (`BCPT`, `CSH`) can be judged against SPY's *price* return rather than its
+  total return. We never compare a price return to a total return.
+- **Objective extended 2026-09-20.** The question now has a **risk** half as well as a return
+  half — volatility and risk-adjusted return at every horizon — and a **1-year** horizon was
+  added, making five. Dashboard scope was un-parked at the same time. Nothing built so far is
+  affected: Landing, Bronze, EDA and the whole Silver plan stand unchanged, because the risk
+  metrics are aggregates over the monthly return series Silver already produces. Settled in
+  `specs/OBJECTIVE.md`.
 - **Landing and Bronze are both verified.** Landing ran 2026-09-20 as a five-task chained job, all
   SUCCESS. Landed: 120 metadata rows, 16,357 CSV archive rows, 35,121 Yahoo trust rows
   across 100 symbols, 915 index rows across 3, and 122 pull-log rows. Two spec numbers were
@@ -287,25 +341,44 @@ The headline finding is already in: the mis-scaled price rows are **in the Yahoo
 affecting 36 of the 96 usable trusts inside the 15-year window, which reinstates the scale
 repair that the Landing spec had retired.
 
-**Step 4 — Silver**
-Eight rules, each citing evidence from step 3: scale repair (the hardest — 36 symbols, 743
-corrupted rows), currency normalisation, stub rejection, the `PCFT` zero, partial-month
-exclusion, the month key, **total return via `LAG`** —
-`(Close_t + Dividends_t) / Close_{t-1} - 1`, compounded — applied identically to trusts and
-to SPY, then the union with the two archived delisted trusts. MERGE on the business key.
-Flat tables, no SCD2 here.
+**Step 4 — Silver** *(spec approved and built 2026-09-20; three notebooks, verifying)*
+Eleven rules (S1–S11), each citing the EDA finding it answers. Three tables: `silver.ticker`
+(121 rows), `silver.monthly_performance` (16,770 rows) and `silver.price_repair_log` (490
+rows, the audit trail for every value changed or removed).
+
+The hard rule is **S2, scale repair**: detect a close that is zero or more than 2x from the
+median of its 13-month neighbourhood, repair it to that bar's own `(High + Low) / 2`, re-test
+the repair, and delete the month if it still fails. **381 repaired, 109 deleted** out of
+16,770 — 0.65%. It is verified out-of-sample against the next month's opening price (2.17%
+error repaired, against 447% uncorrected and 0.47% for a clean row), and proved to be
+catching data defects rather than volatility by firing **zero** times in March 2020 while
+firing 24 times in each of two calm months. It also subsumes the `PCFT` zero with no special
+case. Two EDA claims were overturned in the process and corrected there.
+
+The other rules: the month key (`YYYYMM` INT, with the `day <= 3` variant for the CSV
+archive), **S3 the 2011-08 study window**, partial-month exclusion derived from the pull log,
+**both `price_return` and `total_return` on every row** so the dividend-less archive trusts
+are compared against SPY's price return rather than its total return, currency carried but
+never converted (a return is unit-free), stubs kept for Gold to filter, null managers carried,
+status derived, MERGE on the business key.
+
+S3 is a change to a previously agreed design point — see `dim_date` above.
 
 **Step 5 — Gold dimensions**
-`dim_date` (~710 rows, 1967-12 onward) and `dim_ticker` with the SCD2 MERGE closing and
+`dim_date` (~181 rows, 2011-08 onward) and `dim_ticker` with the SCD2 MERGE closing and
 opening version rows.
 
 **Step 6 — Gold facts**
-`fact_monthly_performance`, then `fact_horizon_performance` with the 36-month minimum and
-delisted trusts judged over their own lifespan against the index over that same span.
+`fact_monthly_performance`, then `fact_horizon_performance` at **five horizons** with the
+36-month minimum, delisted trusts judged over their own lifespan against the index over that
+same span, and **volatility plus risk-adjusted return** aggregated over each window.
 
 **Step 7 — Semantic and dashboard**
-Scope deliberately parked until Gold is real. Candidates: beat-rate summary (the headline),
-growth curves, trust leaderboard, beat rate by sector.
+Scope settled 2026-09-20 in `specs/OBJECTIVE.md`. Headline: beat rate by horizon, with and
+without delisted trusts, plus the return-versus-volatility verdict. Four extra cuts, all
+plain `GROUP BY` views over columns `dim_ticker` already holds — **by management group**,
+**sole vs multi-manager**, **by AIC sector**, and a **best/worst leaderboard** (display
+only; it never filters the fact table). Views, so they cut from the end if time runs short.
 
 **Step 8 — Orchestration**
 One Databricks Workflow, chained tasks, monthly schedule. Not theatre: the SPY side
@@ -358,6 +431,9 @@ README (architecture diagram, how to run, results), 5–10 minute video, LinkedI
 | Why is there a Landing *and* a Bronze? | Landing is a transient receiving zone holding exactly what arrived; Bronze is the permanent record under one all-STRING contract. |
 | Why no lineage columns? | Delta's `DESCRIBE HISTORY` already records load time, user and notebook, and UC draws lineage. With OVERWRITE, a per-row stamp would repeat one value across every row. |
 | Why total return and not just price? | UK trusts yield 3–5% a year against SPY's 1.3%, so price-only comparison silently favours the index. I compute both sides the same way from `Close` plus `Dividends`. |
+| Why measure volatility too? | A trust that beats the index by swinging twice as hard has not beaten it in any way an investor would accept. Volatility is the standard deviation of monthly returns, annualised; dividing return by it gives reward per unit of risk. Same window, two more aggregates. |
+| Why not max drawdown or a Sharpe ratio? | Drawdown is a good number and I would add it next. Sharpe needs a risk-free rate, which is a whole extra source for one ratio. I kept the two measures that answer the question and left the rest out on purpose. |
+| Why a 1-year horizon as well? | It costs one row per trust and gives the recent picture to contrast against the 15-year one. Three years stays as the floor because 36 months is the minimum history to enter the facts at all. |
 | Why not use Yahoo's `Adj_Close`? | It is dividend-adjusted for SPY but not for UK trusts — 97 of 102 show an adjustment under 0.5%, including HFEL, which paid 232.6p on a 359p share. Using it would understate the trusts. |
 | How do you know delisted trusts are missing? | The pipeline records it. `landing.yf_pull_log_raw` holds a row per requested symbol, and 18 trusts return nothing — 16 with `No data found, symbol may be delisted`, 2 with an empty frame. |
 | What would you do with more time? | Source real manager history so the SCD2 has depth on day one, and find a source for the delisted trusts so survivorship rests on more than two. |
