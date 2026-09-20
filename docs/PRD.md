@@ -1,10 +1,12 @@
 # PRD — Do UK investment trusts beat the S&P 500?
 
 **Last updated:** 2026-09-20
-**Current position:** Step 6 of 9 — Gold facts. **The answer is measured:** only **5.3%** of
+**Current position:** Step 7 of 9 — semantic views and the dashboard. **Gold is complete and
+the answer is in the warehouse:** only **5.3%** of
 UK investment trusts beat the S&P 500 over 15 years, **10.6%** over 10 — and **none** beat it
-over 15 or 10 years while also being less volatile. Spec in `specs/03_gold/facts.md`, awaiting
-approval. **Silver is verified** on Databricks as
+over 15 or 10 years while also being less volatile. `gold.fact_horizon_performance` holds 445 rows across five horizons, with return, income,
+volatility, risk-adjusted return and three stored ranks. `gold.fact_monthly_performance`
+holds 15,516 rows with zero orphan keys against either dimension. **Silver is verified** on Databricks as
 of 2026-09-20: three notebooks ran green on the first attempt, 16,770 rows across 104
 tickers, and every expected number matched bar one (see below). Landing, Bronze and EDA are
 all verified too.
@@ -275,7 +277,7 @@ Specs live in `specs/<layer>/` and are gitignored — working notes, not deliver
 | 3 | **EDA** — evidence for Silver's rules | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 4 | **Silver** — scale repair, currency, total return | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 5 | **Gold dims** — `dim_date`, `dim_ticker` SCD2 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| 6 | **Gold facts** — monthly plus horizon, return + risk | ✅ | ✅ | 🔵 | ⬜ | ⬜ |
+| 6 | **Gold facts** — monthly plus horizon, return + risk | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 7 | **Semantic plus dashboard** | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 8 | **Orchestration** — one monthly Workflow | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 9 | **Presentation** — README, video, LinkedIn | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
