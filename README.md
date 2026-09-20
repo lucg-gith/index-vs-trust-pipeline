@@ -102,9 +102,14 @@ Every cleaning rule is backed by evidence in the EDA notebook rather than assert
 02_silver/      scale repair, currency normalisation, total return
 03_gold/        dimensions and facts
 04_semantic/    views for the dashboard
+05_orchestration/  the Workflow definition, one JSON file
 data/           the committed source CSVs
 docs/           the PRD and the star-schema diagram
 ```
+
+Every notebook is named `<layer>_<ddl|etl>[_<object>]` — `bronze_ddl`, `gold_etl_dim_ticker` —
+and that name is also its task key in the Workflow, so a box on the job graph and a file in the
+repository carry the same name.
 
 ## How to run
 

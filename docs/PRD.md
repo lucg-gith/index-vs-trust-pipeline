@@ -3,7 +3,9 @@
 **Last updated:** 2026-09-20
 **Current position:** Step 8 of 9 — orchestration. The spec is written and awaiting approval:
 `specs/05_orchestration/workflow.md`, one job of 21 tasks on a monthly schedule, sourced from
-GitHub rather than the workspace. **Step 7 is complete:** the five semantic
+GitHub rather than the workspace. Revised 2026-09-20 to layer-first task names
+(`bronze_ddl`, `gold_etl_dim_ticker`) with the notebooks renamed to match, and to a layer-gate
+graph — each layer's DDL task is the gate into that layer. **Step 7 is complete:** the five semantic
 views and the dashboard are both built and verified. The dashboard is a Databricks AI/BI page
 created through the Lakeview REST API and published — one page, seven tiles, five datasets,
 its definition version-controlled at `04_semantic/dashboard/beat_rate.lvdash.json`. A Power BI
@@ -290,7 +292,7 @@ Specs live in `specs/<layer>/` and are gitignored — working notes, not deliver
 | 6 | **Gold facts** — monthly plus horizon, return + risk | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 7a | **Semantic** — five thin views over Gold | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 7b | **Dashboard** — one page, seven tiles | ✅ | ✅ | ✅ | ✅ | ✅ |
-| 8 | **Orchestration** — one monthly Workflow | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| 8 | **Orchestration** — one monthly Workflow | ✅ | ✅ | ✅ | ✅ | ⬜ |
 | 9 | **Presentation** — README, video, LinkedIn | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ### Open at this moment
@@ -433,7 +435,9 @@ aloud rather than drawn. Full detail in `specs/04_semantic/dashboard.md`.
 
 **Step 8 — Orchestration**
 One Databricks Workflow, chained tasks, monthly schedule. Not theatre: the SPY side
-genuinely gains a month per run.
+genuinely gains a month per run. Tasks are named `<layer>_<ddl|etl>[_<object>]` and the
+notebooks are renamed to match, so a task box's title and its file path read the same. Each
+layer's DDL task gates the layer, so the board reads as five columns.
 
 **Step 9 — Presentation**
 README (architecture diagram, how to run, results), 5–10 minute video, LinkedIn post.
