@@ -495,7 +495,9 @@
                     "type": "quantitative"
                   },
                   "axis": {
-                    "title": "Annualised volatility %"
+                    "title": "Annualised volatility %",
+                    "hideTitle": false,
+                    "hideLabels": false
                   },
                   "displayName": "Annualised volatility %"
                 },
@@ -505,7 +507,9 @@
                     "type": "quantitative"
                   },
                   "axis": {
-                    "title": "Annualised return %"
+                    "title": "Annualised return %",
+                    "hideTitle": false,
+                    "hideLabels": false
                   },
                   "displayName": "Annualised return %"
                 },
@@ -513,6 +517,10 @@
                   "fieldName": "entity_type",
                   "scale": {
                     "type": "categorical"
+                  },
+                  "legend": {
+                    "hide": false,
+                    "title": "Type"
                   },
                   "displayName": "Type"
                 },
