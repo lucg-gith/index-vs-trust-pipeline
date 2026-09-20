@@ -412,7 +412,10 @@
                       "by": "x-reversed"
                     }
                   },
-                  "displayName": "Horizon (years)"
+                  "displayName": "Horizon (years)",
+                  "axis": {
+                    "hideTitle": true
+                  }
                 },
                 "y": {
                   "fieldName": "beat_rate_pct",
@@ -420,7 +423,8 @@
                     "type": "quantitative"
                   },
                   "axis": {
-                    "title": "Beat rate %"
+                    "hideTitle": true,
+                    "hideLabels": true
                   },
                   "displayName": "Beat rate %"
                 },
@@ -580,7 +584,10 @@
                       "by": "x-reversed"
                     }
                   },
-                  "displayName": "Horizon (years)"
+                  "displayName": "Horizon (years)",
+                  "axis": {
+                    "hideTitle": true
+                  }
                 },
                 "y": {
                   "fieldName": "beat_rate_pct",
@@ -588,7 +595,8 @@
                     "type": "quantitative"
                   },
                   "axis": {
-                    "title": "Beat rate %"
+                    "hideTitle": true,
+                    "hideLabels": true
                   },
                   "displayName": "Beat rate %"
                 },
@@ -598,6 +606,9 @@
                     "type": "categorical"
                   },
                   "displayName": "Cohort"
+                },
+                "label": {
+                  "show": true
                 }
               },
               "frame": {
