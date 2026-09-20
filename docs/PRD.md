@@ -1,10 +1,11 @@
 # PRD — Do UK investment trusts beat the S&P 500?
 
 **Last updated:** 2026-09-20
-**Current position:** Step 2 of 9 — Bronze, starting from scratch. **Landing is verified:**
+**Current position:** Step 2 of 9 — Bronze, rebuilt and awaiting its first run. **Landing is verified:**
 all five notebooks ran green on Databricks on 2026-09-20 and every check matches. The price
 source changed on 2026-09-19 from the CSV to Yahoo Finance, which adds dividends and history
-back to 1967. Bronze was deleted the same day and is being redone against the new Landing.
+back to 1967. Bronze was deleted the same day and rebuilt on 2026-09-20 against the new
+Landing: six notebooks, each casting the live schema to STRING rather than naming columns.
 
 ---
 
@@ -238,7 +239,7 @@ Specs live in `specs/<layer>/` and are gitignored — working notes, not deliver
 |---|---|:--:|:--:|:--:|:--:|:--:|
 | 0 | **Design** — close the design tree | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 1 | **Landing** — 4 ingests plus schema | ✅ | ✅ | ✅ | ✅ | ✅ |
-| 2 | **Bronze** — all-STRING recast | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| 2 | **Bronze** — all-STRING recast | ✅ | ✅ | ✅ | ✅ | ⬜ |
 | 3 | **EDA** — evidence for Silver's rules | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 4 | **Silver** — currency, stubs, total return | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 5 | **Gold dims** — `dim_date`, `dim_ticker` SCD2 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
@@ -338,7 +339,7 @@ README (architecture diagram, how to run, results), 5–10 minute video, LinkedI
 | Why this dimensional model? | One fact, two dims, every dim joins straight to the fact. Trust vs index is a self-join on one table. |
 | How do you guarantee no duplicates? | OVERWRITE into Landing and Bronze, MERGE on the business key into Silver and Gold. |
 | Show me your SCD2 | A trust's manager, firm or listing status changes and I close the old row and open a new one — watch, I'll change one and re-run. |
-| What if the source changes schema? | Bronze lists every column explicitly, so a new or missing column is an error, not a silent change. |
+| What if the source changes schema? | Bronze casts every column it finds to STRING, so nothing is ever dropped — a new column just lands and waits. Silver names the columns it needs, so a missing one fails there, at the point where it actually matters. |
 | Why is there a Landing *and* a Bronze? | Landing is a transient receiving zone holding exactly what arrived; Bronze is the permanent record under one all-STRING contract. |
 | Why no lineage columns? | Delta's `DESCRIBE HISTORY` already records load time, user and notebook, and UC draws lineage. With OVERWRITE, a per-row stamp would repeat one value across every row. |
 | Why total return and not just price? | UK trusts yield 3–5% a year against SPY's 1.3%, so price-only comparison silently favours the index. I compute both sides the same way from `Close` plus `Dividends`. |
