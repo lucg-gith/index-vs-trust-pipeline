@@ -1,44 +1,48 @@
-<title>Index vs Trust Schema</title>
+<title>Index vs Trust Star Schema</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=JetBrains+Mono:wght@400;500;600&display=swap">
+
 <style>
   :root {
-    --paper: #EEF1EE;
-    --surface: #FBFCFA;
-    --ink: #16211C;
-    --ink-muted: #52685C;
-    --line: #C7D1C5;
-    --dim-accent: #2B5B6B;
-    --dim-tint: #E1EBEE;
-    --fact-accent: #A6531C;
-    --fact-tint: #F3E3D6;
+    --paper:      #EDF1F2;
+    --surface:    #FBFDFD;
+    --ink:        #121B20;
+    --ink-muted:  #55686F;
+    --line:       #C4D0D4;
+    --line-soft:  #DCE4E6;
+    --dim:        #14587A;
+    --dim-tint:   #DEEAEF;
+    --fact:       #8A6510;
+    --fact-tint:  #F1E7D0;
   }
 
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --paper: #121917;
-      --surface: #1A2320;
-      --ink: #E7EDE8;
-      --ink-muted: #93A79A;
-      --line: #34433C;
-      --dim-accent: #3E7C90;
-      --dim-tint: #1F343B;
-      --fact-accent: #C06A2E;
-      --fact-tint: #3A2A1E;
+      --paper:     #0E1518;
+      --surface:   #161F23;
+      --ink:       #E4ECEE;
+      --ink-muted: #8FA3AA;
+      --line:      #2C3B41;
+      --line-soft: #223036;
+      --dim:       #55A3C2;
+      --dim-tint:  #16323E;
+      --fact:      #C9A045;
+      --fact-tint: #322914;
     }
   }
 
   :root[data-theme="dark"] {
-    --paper: #121917;
-    --surface: #1A2320;
-    --ink: #E7EDE8;
-    --ink-muted: #93A79A;
-    --line: #34433C;
-    --dim-accent: #3E7C90;
-    --dim-tint: #1F343B;
-    --fact-accent: #C06A2E;
-    --fact-tint: #3A2A1E;
+    --paper:     #0E1518;
+    --surface:   #161F23;
+    --ink:       #E4ECEE;
+    --ink-muted: #8FA3AA;
+    --line:      #2C3B41;
+    --line-soft: #223036;
+    --dim:       #55A3C2;
+    --dim-tint:  #16323E;
+    --fact:      #C9A045;
+    --fact-tint: #322914;
   }
 
   * { box-sizing: border-box; }
@@ -46,358 +50,450 @@
   body {
     background: var(--paper);
     color: var(--ink);
-    font-family: 'Public Sans', system-ui, sans-serif;
-    line-height: 1.6;
-  }
-
-  main {
-    max-width: 980px;
-    margin: 0 auto;
-    padding: 56px 24px 80px;
-    display: flex;
-    flex-direction: column;
-    gap: 40px;
-  }
-
-  .eyebrow {
-    font: 600 12px/1 'Public Sans', sans-serif;
-    letter-spacing: 0.09em;
-    text-transform: uppercase;
-    color: var(--ink-muted);
-    margin: 0 0 10px;
-  }
-
-  h1 {
     font-family: 'Source Serif 4', Georgia, serif;
-    font-weight: 700;
-    font-size: clamp(2rem, 4vw, 2.75rem);
-    text-wrap: balance;
-    margin: 0 0 14px;
-    letter-spacing: -0.01em;
-  }
-
-  .subtitle {
-    max-width: 62ch;
-    font-size: 1.05rem;
-    color: var(--ink-muted);
-    margin: 0 0 16px;
-  }
-
-  .meta-line {
-    font: 500 13px/1 'IBM Plex Mono', monospace;
-    color: var(--ink-muted);
-    letter-spacing: 0.02em;
-  }
-
-  h2 {
-    font-family: 'Source Serif 4', Georgia, serif;
-    font-weight: 600;
-    font-size: 1.45rem;
-    margin: 0 0 12px;
-  }
-
-  section p {
-    max-width: 65ch;
+    font-size: 16px;
+    line-height: 1.62;
     margin: 0;
   }
 
-  .legend {
-    display: flex;
-    gap: 22px;
-    align-items: center;
-    font: 500 13px/1 'Public Sans', sans-serif;
-    color: var(--ink-muted);
-  }
-
-  .legend-item { display: flex; align-items: center; gap: 8px; }
-
-  .swatch {
-    width: 12px; height: 12px; border-radius: 3px; display: inline-block;
-  }
-  .swatch.dim { background: var(--dim-accent); }
-  .swatch.fact { background: var(--fact-accent); }
-
-  .diagram-scroll {
-    overflow-x: auto;
-    background: var(--surface);
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    padding: 12px;
-  }
-
-  figure { margin: 0; }
-
-  svg { display: block; min-width: 760px; width: 100%; height: auto; color: var(--ink-muted); }
-
-  .box-body { fill: var(--surface); stroke: var(--line); stroke-width: 1.4; }
-  .box-header-dim { fill: var(--dim-accent); }
-  .box-header-fact { fill: var(--fact-accent); }
-  .box-title { font: 600 14px 'IBM Plex Mono', monospace; fill: #F6F8F6; }
-  .box-tag { font: 500 11px 'Public Sans', sans-serif; fill: rgba(246,248,246,0.82); font-style: italic; }
-  .row-key { font: 600 12.5px 'IBM Plex Mono', monospace; }
-  .row-rest { font: 400 12.5px 'IBM Plex Mono', monospace; fill: var(--ink); }
-  .row-plain { font: 400 12.5px 'IBM Plex Mono', monospace; fill: var(--ink); }
-  .conn-label-bg { fill: var(--surface); }
-  .conn-label { font: 500 11.5px 'IBM Plex Mono', monospace; fill: var(--ink-muted); }
-
-  figcaption {
-    margin-top: 14px;
-    font-size: 0.92rem;
-    color: var(--ink-muted);
-    max-width: 70ch;
-  }
-
-  .callout {
-    border-left: 3px solid var(--dim-accent);
-    background: var(--dim-tint);
-    padding: 18px 22px;
-    border-radius: 0 8px 8px 0;
-  }
-
-  .callout .eyebrow { margin-bottom: 8px; color: var(--dim-accent); }
-  .callout p { margin: 0; color: var(--ink); }
-  .callout code { font-family: 'IBM Plex Mono', monospace; font-size: 0.92em; }
-
-  .table-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 22px;
-  }
-
-  .table-card {
-    background: var(--surface);
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    overflow: hidden;
+  main {
+    max-width: 1060px;
+    margin: 0 auto;
+    padding-block: 56px 80px;
+    padding-inline: 24px;
     display: flex;
     flex-direction: column;
+    gap: 52px;
   }
 
-  .table-card-head {
-    padding: 12px 16px;
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 10px;
-    color: #F6F8F6;
-  }
-  .table-card-head.dim { background: var(--dim-accent); }
-  .table-card-head.fact { background: var(--fact-accent); }
+  h1, h2, h3 { font-family: 'Archivo', system-ui, sans-serif; text-wrap: balance; margin: 0; }
+  h1 { font-size: clamp(1.9rem, 5vw, 2.6rem); font-weight: 700; letter-spacing: -0.02em; line-height: 1.12; }
+  h2 { font-size: 1.32rem; font-weight: 600; letter-spacing: -0.01em; }
+  p { margin: 0; max-width: 68ch; }
 
-  .table-card-head .name {
-    font: 600 14px 'IBM Plex Mono', monospace;
-  }
-  .table-card-head .kind {
-    font: 500 11px 'Public Sans', sans-serif;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    opacity: 0.85;
-    white-space: nowrap;
-  }
+  code, .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.88em; }
 
-  .col-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.86rem;
+  .eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    color: var(--ink-muted);
+    margin-bottom: 10px;
   }
-  .col-table td {
-    padding: 9px 16px;
-    border-top: 1px solid var(--line);
-    vertical-align: top;
-  }
-  .col-table tr:first-child td { border-top: none; }
-  .col-name {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 0.84rem;
-    white-space: nowrap;
-    width: 1%;
-  }
-  .badge {
-    display: inline-block;
-    font: 600 10px/1 'IBM Plex Mono', monospace;
-    letter-spacing: 0.03em;
-    padding: 2px 6px;
-    border-radius: 3px;
+  .subtitle { font-size: 1.12rem; color: var(--ink-muted); margin-top: 14px; }
+
+  header { display: flex; flex-direction: column; gap: 0; }
+
+  /* the pipeline really is a sequence, so it gets sequence treatment */
+  .flow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 26px; }
+  .flow span {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px;
+    padding: 4px 10px;
     border: 1px solid var(--line);
+    border-radius: 999px;
     color: var(--ink-muted);
-    background: var(--paper);
-    white-space: nowrap;
   }
-  .col-note {
+  .flow span.here {
+    color: var(--surface);
+    background: var(--fact);
+    border-color: var(--fact);
+    font-weight: 600;
+  }
+  .flow i { color: var(--ink-muted); font-style: normal; font-size: 12px; }
+
+  section { display: flex; flex-direction: column; gap: 16px; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 20px; align-items: center; }
+  .legend-item {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: 'Archivo', sans-serif; font-size: 12.5px; color: var(--ink-muted);
+  }
+  .swatch { width: 13px; height: 13px; border-radius: 3px; border: 1px solid var(--line); display: inline-block; }
+  .swatch.d { background: var(--dim-tint); border-color: var(--dim); }
+  .swatch.f { background: var(--fact-tint); border-color: var(--fact); }
+
+  figure { margin: 0; }
+  .fig-scroll { overflow-x: auto; padding-bottom: 4px; }
+  .diagram {
+    display: block;
+    width: 100%;
+    min-width: 700px;
+    height: auto;
     color: var(--ink-muted);
-    font-size: 0.83rem;
   }
+  figcaption {
+    font-size: 0.92rem;
+    color: var(--ink-muted);
+    max-width: 72ch;
+    margin-top: 14px;
+  }
+
+  /* SVG styling lives here, not inside the fragment */
+  .b-body   { fill: var(--surface); stroke: var(--line); stroke-width: 1.4; }
+  .b-head-d { fill: var(--dim-tint); }
+  .b-head-f { fill: var(--fact-tint); }
+  .b-title  { font-family: 'Archivo', sans-serif; font-size: 18px; font-weight: 600; fill: var(--ink); }
+  .b-tag    { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 500; fill: var(--ink-muted); letter-spacing: 0.02em; }
+  .row      { font-family: 'JetBrains Mono', monospace; font-size: 12.5px; fill: var(--ink); }
+  .row-note { font-family: 'Source Serif 4', serif; font-size: 12.5px; font-style: italic; fill: var(--ink-muted); }
+  .kd       { fill: var(--dim); font-weight: 600; }
+  .kf       { fill: var(--fact); font-weight: 600; }
+  .conn     { stroke: currentColor; stroke-width: 1.5; fill: none; }
+  .conn-dash{ stroke: currentColor; stroke-width: 1.4; fill: none; stroke-dasharray: 6 5; opacity: 0.55; }
+  .lab      { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; fill: var(--ink-muted); }
+  .lab-bg   { fill: var(--paper); }
+  .axis     { stroke: var(--line); stroke-width: 1.2; }
+  .bar-d    { fill: var(--dim-tint); stroke: var(--dim); stroke-width: 1.4; }
+  .chip     { fill: var(--fact-tint); stroke: var(--fact); stroke-width: 1.2; }
+  .ghost    { fill: none; stroke: var(--line); stroke-width: 1.4; stroke-dasharray: 6 5; }
+  .ghost-t  { font-family: 'JetBrains Mono', monospace; font-size: 12.5px; fill: var(--ink-muted); }
+
+  .callout {
+    background: var(--surface);
+    border-left: 3px solid var(--dim);
+    padding: 20px 24px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .callout p { max-width: 74ch; }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 18px; }
+  .card { border: 1px solid var(--line); background: var(--surface); }
+  .card-head {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+    padding: 12px 16px; border-bottom: 1px solid var(--line);
+  }
+  .card-head.d { background: var(--dim-tint); }
+  .card-head.f { background: var(--fact-tint); }
+  .card-head .name { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 600; color: var(--ink); }
+  .card-head .kind { font-family: 'Archivo', sans-serif; font-size: 10.5px; letter-spacing: 0.08em; color: var(--ink-muted); white-space: nowrap; }
+  .cols { width: 100%; border-collapse: collapse; }
+  .cols td { padding: 8px 16px; border-top: 1px solid var(--line-soft); vertical-align: top; font-size: 0.86rem; }
+  .cols tr:first-child td { border-top: none; }
+  .cols .c { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(--ink); }
+  .cols .n { color: var(--ink-muted); font-size: 0.85rem; }
+  .pk { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; font-weight: 600; padding: 1px 5px; border: 1px solid var(--line); border-radius: 3px; color: var(--ink-muted); }
+
+  .rejects { display: flex; flex-direction: column; gap: 14px; margin: 0; }
+  .reject { display: grid; grid-template-columns: minmax(150px, 210px) 1fr; gap: 6px 22px; padding-bottom: 14px; border-bottom: 1px solid var(--line-soft); }
+  .reject:last-child { border-bottom: none; padding-bottom: 0; }
+  .reject dt { font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: var(--ink); }
+  .reject dd { margin: 0; color: var(--ink-muted); font-size: 0.94rem; }
 
   footer {
     border-top: 1px solid var(--line);
-    padding-top: 20px;
-    font-size: 0.82rem;
+    padding-top: 22px;
+    font-size: 0.85rem;
     color: var(--ink-muted);
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+
+  @media (max-width: 560px) {
+    .reject { grid-template-columns: 1fr; }
+    main { gap: 42px; }
   }
 </style>
 
 <main>
 
-  <div>
-    <p class="eyebrow">Gold layer &middot; dimensional model</p>
-    <h1>Index vs Trust Schema</h1>
-    <p class="subtitle">Star schema comparing S&amp;P 500 total return against a performance-ranked basket of UK investment trusts, plus the manager-tenure dimension that carries the project's slowly-changing history.</p>
-    <p class="meta-line">5 tables &middot; 2 fact tables &middot; 3 dimensions &middot; 1 SCD2 dimension</p>
-  </div>
+  <header>
+    <p class="eyebrow">GOLD LAYER &middot; DIMENSIONAL MODEL</p>
+    <h1>Index vs Trust Star Schema</h1>
+    <p class="subtitle">Two dimensions, two facts, and every join direct &mdash; the model behind
+      &ldquo;what share of UK investment trusts beat the S&amp;P 500?&rdquo;</p>
+    <div class="flow">
+      <span>landing</span><i>&rarr;</i>
+      <span>bronze</span><i>&rarr;</i>
+      <span>silver</span><i>&rarr;</i>
+      <span class="here">gold</span><i>&rarr;</i>
+      <span>semantic</span>
+    </div>
+  </header>
 
   <section>
-    <h2>Why two stars</h2>
-    <p>The model isn't a single star &mdash; it's a small constellation. <code style="font-family:'IBM Plex Mono',monospace">fact_monthly_performance</code> answers the headline question (index vs. trust returns, month by month), while <code style="font-family:'IBM Plex Mono',monospace">fact_manager_tenure_performance</code> answers a narrower one (did performance change when the manager changed). Both facts share <code style="font-family:'IBM Plex Mono',monospace">dim_financial_instrument</code> as the bridge, so the two questions stay joinable without forcing everything into one oversized fact table.</p>
-  </section>
+    <h2>The star</h2>
+    <p>Both dimensions join <strong>directly</strong> to both facts. There is no intermediate table
+      anywhere in the model, which is what makes it a star rather than a snowflake: every question the
+      dashboard asks is one join away from the measures.</p>
 
-  <section>
-    <div class="legend" style="margin-bottom: 14px;">
-      <span class="legend-item"><span class="swatch dim"></span>Dimension</span>
-      <span class="legend-item"><span class="swatch fact"></span>Fact table</span>
+    <div class="legend">
+      <span class="legend-item"><span class="swatch d"></span>Dimension</span>
+      <span class="legend-item"><span class="swatch f"></span>Fact</span>
+      <span class="legend-item"><span class="mono" style="color:var(--dim)">PK</span>&nbsp;primary key
+        &middot; <span class="mono" style="color:var(--fact)">FK</span>&nbsp;foreign key</span>
     </div>
 
-    <div class="diagram-scroll">
-      <figure>
-        <svg viewBox="0 0 1160 580" role="img" aria-label="Fact constellation diagram: dim_date and dim_financial_instrument feed fact_monthly_performance; dim_financial_instrument also feeds dim_manager, an SCD2 dimension, which feeds fact_manager_tenure_performance.">
+    <figure>
+      <div class="fig-scroll">
+        <svg class="diagram" viewBox="0 0 1000 700" role="img" aria-label="Star schema: dim_ticker and dim_date each join directly to both fact_monthly_performance and fact_horizon_performance, giving four direct joins and no intermediate tables.">
           <defs>
-            <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
               <path d="M0,0 L10,5 L0,10 z" fill="currentColor"></path>
             </marker>
           </defs>
 
-          <!-- connectors (drawn first, under the boxes) -->
-          <line x1="165" y1="210" x2="300" y2="370" stroke="currentColor" stroke-width="1.6" marker-end="url(#arrow)"></line>
-          <line x1="500" y1="210" x2="460" y2="370" stroke="currentColor" stroke-width="1.6" marker-end="url(#arrow)"></line>
-          <line x1="725" y1="130" x2="870" y2="130" stroke="currentColor" stroke-width="1.6" marker-end="url(#arrow)"></line>
-          <line x1="995" y1="210" x2="995" y2="370" stroke="currentColor" stroke-width="1.6" marker-end="url(#arrow)"></line>
+          <!-- connectors first, so the boxes sit on top of them -->
+          <line class="conn" x1="180" y1="260" x2="180" y2="418" marker-end="url(#ar)"></line>
+          <line class="conn" x1="820" y1="260" x2="820" y2="418" marker-end="url(#ar)"></line>
+          <line class="conn" x1="370" y1="260" x2="694" y2="418" marker-end="url(#ar)"></line>
+          <line class="conn" x1="630" y1="260" x2="306" y2="418" marker-end="url(#ar)"></line>
 
-          <!-- connector labels -->
-          <rect class="conn-label-bg" x="163" y="291" width="72" height="18" rx="3"></rect>
-          <text class="conn-label" x="199" y="304" text-anchor="middle">date_key</text>
+          <rect class="lab-bg" x="137" y="332" width="86" height="18" rx="3"></rect>
+          <text class="lab" x="180" y="345" text-anchor="middle">ticker_key</text>
 
-          <rect class="conn-label-bg" x="440" y="291" width="108" height="18" rx="3"></rect>
-          <text class="conn-label" x="494" y="304" text-anchor="middle">instrument_key</text>
+          <rect class="lab-bg" x="777" y="332" width="86" height="18" rx="3"></rect>
+          <text class="lab" x="820" y="345" text-anchor="middle">month_key</text>
 
-          <rect class="conn-label-bg" x="742" y="106" width="112" height="18" rx="3"></rect>
-          <text class="conn-label" x="798" y="119" text-anchor="middle">instrument_key</text>
+          <rect class="lab-bg" x="386" y="285" width="86" height="18" rx="3"></rect>
+          <text class="lab" x="429" y="298" text-anchor="middle">ticker_key</text>
 
-          <rect class="conn-label-bg" x="960" y="291" width="120" height="18" rx="3"></rect>
-          <text class="conn-label" x="1020" y="304" text-anchor="middle">manager_key &middot; 1:1</text>
+          <rect class="lab-bg" x="528" y="285" width="86" height="18" rx="3"></rect>
+          <text class="lab" x="571" y="298" text-anchor="middle">month_key</text>
+
+          <!-- dim_ticker -->
+          <rect class="b-body" x="50" y="40" width="360" height="220" rx="8"></rect>
+          <path class="b-head-d" d="M50,48 a8,8 0 0 1 8,-8 h344 a8,8 0 0 1 8,8 v36 h-360 z"></path>
+          <text class="b-title" x="68" y="72">dim_ticker</text>
+          <text class="b-tag" x="68" y="110">SCD TYPE 2 &middot; 121 ROWS</text>
+          <text class="row" x="68" y="136"><tspan class="kd">PK</tspan>&#160;&#160;ticker_key</text>
+          <text class="row" x="68" y="162">ticker &middot; entity_type &middot; aic_sector</text>
+          <text class="row" x="68" y="188" style="fill:var(--dim)">manager &middot; management_group &middot; status</text>
+          <text class="row" x="68" y="214">effective_start / end_month &middot; is_current</text>
+          <text class="row-note" x="68" y="238">a new version opens when those three change</text>
 
           <!-- dim_date -->
-          <rect class="box-body" x="40" y="50" width="250" height="160" rx="6"></rect>
-          <path class="box-header-dim" d="M40,56 a6,6 0 0 1 6,-6 h238 a6,6 0 0 1 6,6 v30 h-250 z"></path>
-          <text class="box-title" x="54" y="76">dim_date</text>
-          <text class="row-rest" x="54" y="112"><tspan class="row-key" fill="var(--dim-accent)">PK</tspan> &middot; date_key</text>
-          <text class="row-plain" x="54" y="132">is_trading_day</text>
-          <text class="row-plain" x="54" y="152">market_event</text>
-          <text class="row-plain" x="54" y="172" style="fill:var(--ink-muted); font-style:italic;">+ year, quarter, month&#8230;</text>
-
-          <!-- dim_financial_instrument -->
-          <rect class="box-body" x="455" y="50" width="270" height="160" rx="6"></rect>
-          <path class="box-header-dim" d="M455,56 a6,6 0 0 1 6,-6 h258 a6,6 0 0 1 6,6 v30 h-270 z"></path>
-          <text class="box-title" x="469" y="76">dim_financial_instrument</text>
-          <text class="row-rest" x="469" y="112"><tspan class="row-key" fill="var(--dim-accent)">PK</tspan> &middot; instrument_key</text>
-          <text class="row-plain" x="469" y="132">instrument_type &middot; ticker</text>
-          <text class="row-plain" x="469" y="152">aic_sector</text>
-          <text class="row-plain" x="469" y="172">overall_rank &middot; is_top20</text>
-
-          <!-- dim_manager -->
-          <rect class="box-body" x="870" y="50" width="250" height="160" rx="6"></rect>
-          <path class="box-header-dim" d="M870,56 a6,6 0 0 1 6,-6 h238 a6,6 0 0 1 6,6 v30 h-250 z"></path>
-          <text class="box-title" x="884" y="76">dim_manager</text>
-          <text class="row-rest" x="884" y="112"><tspan class="row-key" fill="var(--dim-accent)">PK</tspan> &middot; manager_key</text>
-          <text class="row-rest" x="884" y="132"><tspan class="row-key" fill="var(--dim-accent)">FK</tspan> &middot; instrument_key</text>
-          <text class="row-plain" x="884" y="152">manager_name + group</text>
-          <text class="row-plain" x="884" y="172" style="fill:var(--ink-muted); font-style:italic;">SCD2 &middot; versioned</text>
+          <rect class="b-body" x="590" y="40" width="360" height="220" rx="8"></rect>
+          <path class="b-head-d" d="M590,48 a8,8 0 0 1 8,-8 h344 a8,8 0 0 1 8,8 v36 h-360 z"></path>
+          <text class="b-title" x="608" y="72">dim_date</text>
+          <text class="b-tag" x="608" y="110">MONTHLY &middot; 181 ROWS &middot; 2011-08 &#8594; 2026-08</text>
+          <text class="row" x="608" y="136"><tspan class="kd">PK</tspan>&#160;&#160;month_key</text>
+          <text class="row" x="608" y="162">month_start &middot; year &middot; month_label</text>
+          <text class="row" x="608" y="188">market_event</text>
+          <text class="row-note" x="608" y="214">month_key is a plain YYYYMM integer, not a hash,</text>
+          <text class="row-note" x="608" y="236">so a fact row stays readable without a join</text>
 
           <!-- fact_monthly_performance -->
-          <rect class="box-body" x="210" y="370" width="320" height="170" rx="6"></rect>
-          <path class="box-header-fact" d="M210,376 a6,6 0 0 1 6,-6 h308 a6,6 0 0 1 6,6 v30 h-320 z"></path>
-          <text class="box-title" x="224" y="396">fact_monthly_performance</text>
-          <text class="box-tag" x="224" y="424">grain: instrument &times; month</text>
-          <text class="row-rest" x="224" y="440"><tspan class="row-key" fill="var(--fact-accent)">FK</tspan> &middot; instrument_key, date_key</text>
-          <text class="row-plain" x="224" y="460">close_price &middot; dividend_amount</text>
-          <text class="row-plain" x="224" y="480">monthly_return &middot; cumulative_return</text>
-          <text class="row-plain" x="224" y="500" style="fill:var(--fact-accent);">total_return</text>
+          <rect class="b-body" x="30" y="418" width="400" height="224" rx="8"></rect>
+          <path class="b-head-f" d="M30,426 a8,8 0 0 1 8,-8 h384 a8,8 0 0 1 8,8 v36 h-400 z"></path>
+          <text class="b-title" x="48" y="450">fact_monthly_performance</text>
+          <text class="b-tag" x="48" y="488">GRAIN: TICKER &#215; MONTH &middot; 15,604 ROWS</text>
+          <text class="row" x="48" y="514"><tspan class="kf">PK</tspan>&#160;&#160;monthly_key</text>
+          <text class="row" x="48" y="540"><tspan class="kf">FK</tspan>&#160;&#160;ticker_key &middot; month_key</text>
+          <text class="row" x="48" y="566">close &middot; dividend</text>
+          <text class="row" x="48" y="592">price_return &middot; total_return</text>
+          <text class="row-note" x="48" y="618">carries the version that was live in that month</text>
 
-          <!-- fact_manager_tenure_performance -->
-          <rect class="box-body" x="870" y="370" width="250" height="150" rx="6"></rect>
-          <path class="box-header-fact" d="M870,376 a6,6 0 0 1 6,-6 h238 a6,6 0 0 1 6,6 v30 h-250 z"></path>
-          <text class="box-title" x="884" y="396">fact_manager_tenure</text>
-          <text class="box-tag" x="884" y="424">grain: 1 row per span</text>
-          <text class="row-rest" x="884" y="440"><tspan class="row-key" fill="var(--fact-accent)">FK</tspan> &middot; manager_key</text>
-          <text class="row-plain" x="884" y="460">tenure_return &middot; volatility</text>
-          <text class="row-plain" x="884" y="480" style="fill:var(--fact-accent);">alpha_vs_index</text>
-
+          <!-- fact_horizon_performance -->
+          <rect class="b-body" x="570" y="418" width="400" height="224" rx="8"></rect>
+          <path class="b-head-f" d="M570,426 a8,8 0 0 1 8,-8 h384 a8,8 0 0 1 8,8 v36 h-400 z"></path>
+          <text class="b-title" x="588" y="450">fact_horizon_performance</text>
+          <text class="b-tag" x="588" y="488">GRAIN: TICKER &#215; HORIZON &middot; 445 ROWS</text>
+          <text class="row" x="588" y="514"><tspan class="kf">PK</tspan>&#160;&#160;horizon_key</text>
+          <text class="row" x="588" y="540"><tspan class="kf">FK</tspan>&#160;&#160;ticker_key &middot; month_key</text>
+          <text class="row" x="588" y="566">total_return &middot; volatility &middot; income_return</text>
+          <text class="row" x="588" y="592">index_return_same_period &middot; beat_index</text>
+          <text class="row-note" x="588" y="618">one row per ticker at 15, 10, 5, 3 and 1 years</text>
         </svg>
-      </figure>
-    </div>
-    <figcaption>Two fact tables share <code style="font-family:'IBM Plex Mono',monospace">dim_financial_instrument</code>, forming a fact constellation: monthly performance is measured per instrument, manager-tenure performance per trust&ndash;manager span.</figcaption>
+      </div>
+      <figcaption>Four joins, no intermediate tables. Each arrow runs from a dimension to a fact that
+        carries its key. Both facts were checked for referential integrity after the last full run:
+        <strong>zero orphan <code>ticker_key</code>, zero orphan <code>month_key</code></strong>.</figcaption>
+    </figure>
   </section>
 
   <div class="callout">
-    <p class="eyebrow">Versioning rule</p>
-    <p>A new <code>dim_manager</code> row opens whenever <strong>either</strong> <code>manager_name</code> <strong>or</strong> <code>management_group</code> changes &mdash; a firm handover and a named-manager handover don't always land on the same date. Keeping both attributes versioned in one table means there's only ever one row that's "current" for a trust at a given date, instead of two SCD2 tables with dates to reconcile.</p>
+    <p class="eyebrow">WHY THE INDEX LIVES INSIDE dim_ticker</p>
+    <p>SPY is not a separate table. It sits in <code>dim_ticker</code> alongside the 118 trusts,
+      separated only by <code>entity_type</code>. That one decision is what makes the star work:
+      comparing a trust against the S&amp;P 500 becomes a <strong>self-join on one fact table</strong>
+      rather than a union of two, and both sides are guaranteed to have been measured by the same code.</p>
   </div>
 
   <section>
+    <h2>How an SCD2 version reaches a fact row</h2>
+    <p>A trust changes manager. <code>dim_ticker</code> closes the old row and opens a new one, so the
+      same ticker now has two surrogate keys. The question a reviewer always asks next is which one a
+      fact row carries &mdash; and the answer differs between the two facts, on purpose.</p>
+
+    <figure>
+      <div class="fig-scroll">
+        <svg class="diagram" viewBox="0 0 1000 390" role="img" aria-label="Timeline showing one ticker with two dim_ticker versions split at a manager change in March 2024; each monthly fact row carries the ticker_key of the version that was live in its own month.">
+          <defs>
+            <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="currentColor"></path>
+            </marker>
+          </defs>
+
+          <text class="b-tag" x="80" y="34">TWO ROWS IN dim_ticker FOR ONE TICKER</text>
+
+          <rect class="bar-d" x="80" y="56" width="440" height="66" rx="5"></rect>
+          <text class="row" x="98" y="84" style="fill:var(--dim); font-weight:600">MD5(TRST.L|201108)</text>
+          <text class="row-note" x="98" y="108">version 1 &middot; is_current = false</text>
+
+          <rect class="bar-d" x="530" y="56" width="390" height="66" rx="5"></rect>
+          <text class="row" x="548" y="84" style="fill:var(--dim); font-weight:600">MD5(TRST.L|202403)</text>
+          <text class="row-note" x="548" y="108">version 2 &middot; is_current = true</text>
+
+          <line class="conn-dash" x1="525" y1="46" x2="525" y2="300"></line>
+          <rect class="lab-bg" x="418" y="140" width="216" height="18" rx="3"></rect>
+          <text class="lab" x="526" y="153" text-anchor="middle">manager changes &#8594; 2024-03</text>
+
+          <line class="axis" x1="80" y1="186" x2="920" y2="186"></line>
+          <line class="axis" x1="80" y1="181" x2="80" y2="191"></line>
+          <line class="axis" x1="920" y1="181" x2="920" y2="191"></line>
+          <text class="lab" x="80" y="208" text-anchor="start">2011-08</text>
+          <text class="lab" x="920" y="208" text-anchor="end">2026-08</text>
+
+          <line class="conn" x1="200" y1="250" x2="200" y2="128" marker-end="url(#ar2)"></line>
+          <line class="conn" x1="430" y1="250" x2="430" y2="128" marker-end="url(#ar2)"></line>
+          <line class="conn" x1="700" y1="250" x2="700" y2="128" marker-end="url(#ar2)"></line>
+
+          <rect class="chip" x="152" y="250" width="96" height="28" rx="4"></rect>
+          <text class="row" x="200" y="269" text-anchor="middle">2019-04</text>
+          <rect class="chip" x="382" y="250" width="96" height="28" rx="4"></rect>
+          <text class="row" x="430" y="269" text-anchor="middle">2024-01</text>
+          <rect class="chip" x="652" y="250" width="96" height="28" rx="4"></rect>
+          <text class="row" x="700" y="269" text-anchor="middle">2025-06</text>
+
+          <text class="b-tag" x="80" y="308">ROWS IN fact_monthly_performance</text>
+          <text class="row-note" x="80" y="340">Every monthly row carries the ticker_key of the version live in its own month, resolved once at build time.</text>
+          <text class="row-note" x="80" y="362">fact_horizon_performance carries the current version instead, because it is an as-of-today summary.</text>
+        </svg>
+      </div>
+      <figcaption>The manager file is a snapshot with no dates, so on a first run every ticker is
+        version 1 and all 121 rows are current. The versioning is proven rather than assumed: change
+        one manager, re-run, and that ticker has two rows with only the later one current.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2>What a snowflake would have cost</h2>
+    <p>The obvious-looking move is a <code>dim_manager</code> table. It was considered and rejected,
+      and the drawing shows why &mdash; it adds two hops and a bridge table to reach the same measures.</p>
+
+    <figure>
+      <div class="fig-scroll">
+        <svg class="diagram" viewBox="0 0 1000 300" role="img" aria-label="Comparison: a rejected dim_manager and bridge table adding two hops on the left, against manager kept as a column on dim_ticker joining the fact directly on the right.">
+          <defs>
+            <marker id="ar3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="currentColor"></path>
+            </marker>
+          </defs>
+
+          <rect class="ghost" x="30" y="48" width="190" height="82" rx="8"></rect>
+          <text class="ghost-t" x="50" y="80">dim_manager</text>
+          <text class="row-note" x="50" y="104">227 people</text>
+
+          <rect class="ghost" x="280" y="48" width="230" height="82" rx="8"></rect>
+          <text class="ghost-t" x="300" y="80">bridge_ticker_manager</text>
+          <text class="row-note" x="300" y="104">many-to-many, fans out</text>
+
+          <line class="conn-dash" x1="222" y1="89" x2="272" y2="89" marker-end="url(#ar3)"></line>
+          <line class="conn-dash" x1="512" y1="89" x2="582" y2="89" marker-end="url(#ar3)"></line>
+
+          <text class="b-tag" x="30" y="168">REJECTED &mdash; TWO EXTRA HOPS TO REACH THE SAME MEASURES</text>
+
+          <rect class="b-body" x="590" y="48" width="330" height="82" rx="8"></rect>
+          <path class="b-head-d" d="M590,56 a8,8 0 0 1 8,-8 h314 a8,8 0 0 1 8,8 v30 h-330 z"></path>
+          <text class="b-title" x="608" y="77" style="font-size:15px">dim_ticker</text>
+          <text class="row" x="608" y="112" style="fill:var(--dim)">manager &middot; management_group</text>
+
+          <rect class="b-body" x="590" y="200" width="330" height="66" rx="8"></rect>
+          <path class="b-head-f" d="M590,208 a8,8 0 0 1 8,-8 h314 a8,8 0 0 1 8,8 v30 h-330 z"></path>
+          <text class="b-title" x="608" y="229" style="font-size:15px">fact_horizon_performance</text>
+          <text class="row-note" x="608" y="254">beat rate by manager = one GROUP BY</text>
+
+          <line class="conn" x1="755" y1="130" x2="755" y2="194" marker-end="url(#ar3)"></line>
+          <rect class="lab-bg" x="712" y="152" width="86" height="18" rx="3"></rect>
+          <text class="lab" x="755" y="165" text-anchor="middle">ticker_key</text>
+        </svg>
+      </div>
+      <figcaption>224 of the 227 named managers run exactly one trust, so &ldquo;best manager&rdquo; and
+        &ldquo;best trust&rdquo; are already the same query. A manager dimension would buy a bridge table
+        and a fan-out trap in exchange for nothing, so manager stays an attribute &mdash; a versioned
+        one, which is the part that actually carries information.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2>Considered and rejected</h2>
+    <dl class="rejects">
+      <div class="reject">
+        <dt>dim_manager</dt>
+        <dd>Many-to-many with tickers, needing a bridge table that fans measures out. The full
+          comma-separated manager list is kept on <code>dim_ticker</code>, so no names are lost.</dd>
+      </div>
+      <div class="reject">
+        <dt>dim_management_group</dt>
+        <dd>It has no attributes of its own. A table would snowflake the model for nothing &mdash;
+          beat rate by group is a <code>GROUP BY</code>.</dd>
+      </div>
+      <div class="reject">
+        <dt>rank_band</dt>
+        <dd>Dropped entirely. It existed only because manager data was unavailable, and it dragged
+          the heaviest piece of the old design along with it: a monthly ranking recompute.</dd>
+      </div>
+      <div class="reject">
+        <dt>a degenerate dimension</dt>
+        <dd>There isn&rsquo;t one. <code>entity_type</code> is a plain column, and a degenerate
+          dimension is normally a transaction ID &mdash; this model has no natural transaction ID, so
+          the term would be misapplied rather than clever.</dd>
+      </div>
+    </dl>
+  </section>
+
+  <section>
     <h2>Table reference</h2>
-    <div class="table-grid">
+    <div class="cards">
 
-      <div class="table-card">
-        <div class="table-card-head dim"><span class="name">dim_date</span><span class="kind">Dimension</span></div>
-        <table class="col-table">
-          <tr><td class="col-name">date_key</td><td><span class="badge">PK</span></td><td class="col-note">YYYYMMDD surrogate</td></tr>
-          <tr><td class="col-name">full_date</td><td></td><td class="col-note">calendar date</td></tr>
-          <tr><td class="col-name">year, quarter, month, month_name, day_of_week</td><td></td><td class="col-note">standard calendar attributes</td></tr>
-          <tr><td class="col-name">is_trading_day</td><td></td><td class="col-note">flags weekends/holidays &mdash; only trading days get fact rows</td></tr>
-          <tr><td class="col-name">market_event</td><td></td><td class="col-note">e.g. "COVID Crash" &mdash; hand-seeded from a short list, not a live feed</td></tr>
+      <div class="card">
+        <div class="card-head d"><span class="name">dim_ticker</span><span class="kind">DIMENSION &middot; SCD2</span></div>
+        <table class="cols">
+          <tr><td class="c">ticker_key</td><td><span class="pk">PK</span></td><td class="n">MD5(ticker | effective_start_month)</td></tr>
+          <tr><td class="c">ticker</td><td></td><td class="n">business key &mdash; not unique here, one row per version</td></tr>
+          <tr><td class="c">entity_type</td><td></td><td class="n">Trust or Index, so the comparison is a self-join</td></tr>
+          <tr><td class="c">manager, management_group, status</td><td></td><td class="n">the three SCD2 drivers</td></tr>
+          <tr><td class="c">manager_structure</td><td></td><td class="n">sole or multi, from the count of named managers</td></tr>
+          <tr><td class="c">aic_sector, currency, source_url</td><td></td><td class="n">attributes; the source is cited, not assumed</td></tr>
+          <tr><td class="c">price_source, data_status</td><td></td><td class="n">yahoo / archive / none &middot; usable / stub / no-data</td></tr>
+          <tr><td class="c">effective_start_month, effective_end_month, is_current</td><td></td><td class="n">the validity range, in YYYYMM</td></tr>
         </table>
       </div>
 
-      <div class="table-card">
-        <div class="table-card-head dim"><span class="name">dim_financial_instrument</span><span class="kind">Dimension</span></div>
-        <table class="col-table">
-          <tr><td class="col-name">instrument_key</td><td><span class="badge">PK</span></td><td class="col-note">surrogate</td></tr>
-          <tr><td class="col-name">ticker, name</td><td></td><td class="col-note">e.g. SPY, SMT.L</td></tr>
-          <tr><td class="col-name">instrument_type</td><td></td><td class="col-note">'Index' or 'Trust' &mdash; the one column that lets a single fact table hold both sides of the comparison</td></tr>
-          <tr><td class="col-name">aic_sector</td><td></td><td class="col-note">trust sector classification</td></tr>
-          <tr><td class="col-name">overall_rank, is_top20</td><td></td><td class="col-note">computed once from trailing 15yr return &mdash; not externally curated</td></tr>
+      <div class="card">
+        <div class="card-head d"><span class="name">dim_date</span><span class="kind">DIMENSION</span></div>
+        <table class="cols">
+          <tr><td class="c">month_key</td><td><span class="pk">PK</span></td><td class="n">YYYYMM integer &mdash; readable, and sorts chronologically</td></tr>
+          <tr><td class="c">month_start</td><td></td><td class="n">a real date, for the horizon window arithmetic</td></tr>
+          <tr><td class="c">year, month_label</td><td></td><td class="n">&ldquo;Mar 2024&rdquo;, so the dashboard formats nothing</td></tr>
+          <tr><td class="c">market_event</td><td></td><td class="n">names the few months worth annotating; null otherwise</td></tr>
         </table>
       </div>
 
-      <div class="table-card">
-        <div class="table-card-head dim"><span class="name">dim_manager</span><span class="kind">Dimension &middot; SCD2</span></div>
-        <table class="col-table">
-          <tr><td class="col-name">manager_key</td><td><span class="badge">PK</span></td><td class="col-note">one row per tenure span</td></tr>
-          <tr><td class="col-name">instrument_key</td><td><span class="badge">FK</span></td><td class="col-note">which trust</td></tr>
-          <tr><td class="col-name">manager_name, management_group</td><td></td><td class="col-note">both versioned &mdash; see rule above</td></tr>
-          <tr><td class="col-name">effective_start_date, effective_end_date, is_current</td><td></td><td class="col-note">SCD2 validity range</td></tr>
-          <tr><td class="col-name">history_researched</td><td></td><td class="col-note">honest flag &mdash; true for the 6&ndash;8 trusts with real RNS-sourced history, false where only one default span exists</td></tr>
+      <div class="card">
+        <div class="card-head f"><span class="name">fact_monthly_performance</span><span class="kind">FACT</span></div>
+        <table class="cols">
+          <tr><td class="c">monthly_key</td><td><span class="pk">PK</span></td><td class="n">MD5(ticker | month_key)</td></tr>
+          <tr><td class="c">ticker_key, month_key</td><td><span class="pk">FK</span></td><td class="n">the version live that month, resolved at build time</td></tr>
+          <tr><td class="c">close, dividend</td><td></td><td class="n">from Yahoo &mdash; never Adj_Close</td></tr>
+          <tr><td class="c">price_return</td><td></td><td class="n">null across a gap, never zero</td></tr>
+          <tr><td class="c">total_return</td><td></td><td class="n">(close + dividend) / prior close &minus; 1</td></tr>
+          <tr><td class="c">return_basis</td><td></td><td class="n">total, or price for the two archive trusts</td></tr>
         </table>
       </div>
 
-      <div class="table-card">
-        <div class="table-card-head fact"><span class="name">fact_monthly_performance</span><span class="kind">Fact</span></div>
-        <table class="col-table">
-          <tr><td class="col-name">instrument_key, date_key</td><td><span class="badge">FK</span></td><td class="col-note">composite key; date_key is always month-end</td></tr>
-          <tr><td class="col-name">close_price, dividend_amount</td><td></td><td class="col-note"></td></tr>
-          <tr><td class="col-name">monthly_return, cumulative_return</td><td></td><td class="col-note"></td></tr>
-          <tr><td class="col-name">total_return</td><td></td><td class="col-note">dividend-inclusive &mdash; use SPY, not ^GSPC, for the index side, or it isn't comparable to trust returns</td></tr>
-        </table>
-      </div>
-
-      <div class="table-card">
-        <div class="table-card-head fact"><span class="name">fact_manager_tenure_performance</span><span class="kind">Fact</span></div>
-        <table class="col-table">
-          <tr><td class="col-name">manager_key</td><td><span class="badge">FK</span></td><td class="col-note">1:1 with dim_manager</td></tr>
-          <tr><td class="col-name">tenure_return, tenure_annualized_return, tenure_volatility</td><td></td><td class="col-note">measured over the manager's own span</td></tr>
-          <tr><td class="col-name">index_return_same_period</td><td></td><td class="col-note">S&amp;P 500 return over the identical span</td></tr>
-          <tr><td class="col-name">alpha_vs_index</td><td></td><td class="col-note">tenure_return minus index_return_same_period</td></tr>
+      <div class="card">
+        <div class="card-head f"><span class="name">fact_horizon_performance</span><span class="kind">FACT</span></div>
+        <table class="cols">
+          <tr><td class="c">horizon_key</td><td><span class="pk">PK</span></td><td class="n">MD5(ticker | horizon_years)</td></tr>
+          <tr><td class="c">ticker_key, month_key</td><td><span class="pk">FK</span></td><td class="n">the current version, and the as-of month</td></tr>
+          <tr><td class="c">horizon_years</td><td></td><td class="n">15, 10, 5, 3 or 1</td></tr>
+          <tr><td class="c">start_month_key, end_month_key, months_used</td><td></td><td class="n">the span actually used &mdash; visible, not implied</td></tr>
+          <tr><td class="c">total_return, annualised_return, income_return</td><td></td><td class="n">compounded, never last price over first price</td></tr>
+          <tr><td class="c">volatility, risk_adjusted_return</td><td></td><td class="n">STDDEV(monthly return) &#215; SQRT(12)</td></tr>
+          <tr><td class="c">index_return_same_period, beat_index</td><td></td><td class="n">SPY over exactly this span, on the same basis</td></tr>
+          <tr><td class="c">rank_by_return, rank_by_income, rank_by_risk_adjusted</td><td></td><td class="n">attributes only &mdash; ranking must never filter this fact</td></tr>
         </table>
       </div>
 
@@ -405,8 +501,9 @@
   </section>
 
   <footer>
-    <span>15-year window runs roughly 2011&ndash;2026 from today's date, so it excludes the 2008 financial crisis; COVID (2020), the 2022 bear market, and Aug 2024 volatility fall inside it.</span>
-    <span>Built for a personal data engineering portfolio project.</span>
+    <p>Catalog <code>index-vs-trust-pipeline</code>, schema <code>gold</code>. Row counts are from the
+      last full end-to-end run; re-running the pipeline moves none of them.</p>
+    <p>The ticker in the versioning diagram is illustrative. <code>TRST.L</code> is not a real trust.</p>
   </footer>
 
 </main>
