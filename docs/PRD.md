@@ -1,12 +1,11 @@
 # PRD — Do UK investment trusts beat the S&P 500?
 
 **Last updated:** 2026-09-21
-**Current position:** **Step 8b is complete and verified** — one DDL task per object, 44 tasks,
+**Current position:** **Steps 8 and 8b are complete and verified. The Workflow is live.** Job `218866821337014` now holds all 44 tasks on a monthly schedule, sourced from GitHub `main`, and the degraded-pull guard has been seen to fire and refuse rather than overwrite. Step 8b — one DDL task per object, 44 tasks,
 and on 2026-09-21 **the pipeline ran green end to end for the first time**, Landing through
 Semantic, including a fresh Yahoo pull. Not one published number moved, which is what a move
 rather than a rewrite should do. Spec and its one deviation:
-`specs/05_orchestration/ddl-split.md`. **Step 8, orchestration**, is specced and awaiting
-approval:
+`specs/05_orchestration/ddl-split.md`. Orchestration is specced in
 `specs/05_orchestration/workflow.md`, one job on a monthly schedule, sourced from
 GitHub rather than the workspace. Revised 2026-09-20 to layer-first task names
 (`bronze_ddl`, `gold_etl_dim_ticker`) with the notebooks renamed to match, and to a layer-gate
@@ -297,7 +296,7 @@ Specs live in `specs/<layer>/` and are gitignored — working notes, not deliver
 | 6 | **Gold facts** — monthly plus horizon, return + risk | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 7a | **Semantic** — five thin views over Gold | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 7b | **Dashboard** — one page, seven tiles | ✅ | ✅ | ✅ | ✅ | ✅ |
-| 8 | **Orchestration** — one monthly Workflow | ✅ | ✅ | ✅ | ✅ | ⬜ |
+| 8 | **Orchestration** — one monthly Workflow | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 8b | **One DDL task per object** — 21 tasks becomes 44 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 9 | **Presentation** — README, video, LinkedIn | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
