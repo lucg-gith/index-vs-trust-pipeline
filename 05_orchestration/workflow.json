@@ -1,264 +1,753 @@
 {
-  "name": "index-vs-trust-pipeline",
-  "description": "Landing to Semantic, monthly. Each layer's DDL task is the gate into that layer.",
-  "max_concurrent_runs": 1,
-  "timeout_seconds": 3600,
-  "git_source": {
-    "git_url": "https://github.com/lucg-gith/index-vs-trust-pipeline",
-    "git_provider": "gitHub",
-    "git_branch": "main"
-  },
-  "schedule": {
-    "quartz_cron_expression": "0 0 6 2 * ?",
-    "timezone_id": "Europe/London",
-    "pause_status": "UNPAUSED"
-  },
-  "email_notifications": {
-    "on_failure": [
-      "garrelucia@gmail.com"
-    ]
-  },
-  "tasks": [
-    {
-      "task_key": "landing_ddl",
-      "notebook_task": {
-        "notebook_path": "00_landing/ddl/landing_ddl",
-        "source": "GIT"
-      },
-      "timeout_seconds": 1800
-    },
-    {
-      "task_key": "landing_etl_trusts",
-      "notebook_task": {
-        "notebook_path": "00_landing/etl/landing_etl_trusts",
-        "source": "GIT"
-      },
-      "timeout_seconds": 1800,
-      "depends_on": [
-        { "task_key": "landing_ddl" }
-      ]
-    },
-    {
-      "task_key": "landing_etl_trust_prices_csv",
-      "notebook_task": {
-        "notebook_path": "00_landing/etl/landing_etl_trust_prices_csv",
-        "source": "GIT"
-      },
-      "timeout_seconds": 1800,
-      "depends_on": [
-        { "task_key": "landing_ddl" }
-      ]
-    },
-    {
-      "task_key": "landing_etl_trust_prices_yf",
-      "notebook_task": {
-        "notebook_path": "00_landing/etl/landing_etl_trust_prices_yf",
-        "source": "GIT"
-      },
-      "timeout_seconds": 1800,
-      "depends_on": [
-        { "task_key": "landing_ddl" }
-      ],
-      "max_retries": 1,
-      "min_retry_interval_millis": 60000
-    },
-    {
-      "task_key": "landing_etl_index_prices",
-      "notebook_task": {
-        "notebook_path": "00_landing/etl/landing_etl_index_prices",
-        "source": "GIT"
-      },
-      "timeout_seconds": 1800,
-      "depends_on": [
-        { "task_key": "landing_ddl" }
-      ],
-      "max_retries": 1,
-      "min_retry_interval_millis": 60000
-    },
-    {
-      "task_key": "bronze_ddl",
-      "notebook_task": {
-        "notebook_path": "01_bronze/ddl/bronze_ddl",
-        "source": "GIT"
-      },
-      "timeout_seconds": 1800,
-      "depends_on": [
-        { "task_key": "landing_etl_trusts" },
-        { "task_key": "landing_etl_trust_prices_csv" },
-        { "task_key": "landing_etl_trust_prices_yf" },
-        { "task_key": "landing_etl_index_prices" }
-      ]
-    },
-    {
-      "task_key": "bronze_etl_trusts",
-      "notebook_task": {
-        "notebook_path": "01_bronze/etl/bronze_etl_trusts",
-        "source": "GIT"
-      },
-      "timeout_seconds": 1800,
-      "depends_on": [
-        { "task_key": "bronze_ddl" }
-      ]
-    },
-    {
-      "task_key": "bronze_etl_trust_prices_csv",
-      "notebook_task": {
-        "notebook_path": "01_bronze/etl/bronze_etl_trust_prices_csv",
-        "source": "GIT"
-      },
-      "timeout_seconds": 1800,
-      "depends_on": [
-        { "task_key": "bronze_ddl" }
-      ]
-    },
-    {
-      "task_key": "bronze_etl_trust_prices_yf",
-      "notebook_task": {
-        "notebook_path": "01_bronze/etl/bronze_etl_trust_prices_yf",
-        "source": "GIT"
-      },
-      "timeout_seconds": 1800,
-      "depends_on": [
-        { "task_key": "bronze_ddl" }
-      ]
-    },
-    {
-      "task_key": "bronze_etl_index_prices",
-      "notebook_task": {
-        "notebook_path": "01_bronze/etl/bronze_etl_index_prices",
-        "source": "GIT"
-      },
-      "timeout_seconds": 1800,
-      "depends_on": [
-        { "task_key": "bronze_ddl" }
-      ]
-    },
-    {
-      "task_key": "bronze_etl_yf_pull_log",
-      "notebook_task": {
-        "notebook_path": "01_bronze/etl/bronze_etl_yf_pull_log",
-        "source": "GIT"
-      },
-      "timeout_seconds": 1800,
-      "depends_on": [
-        { "task_key": "bronze_ddl" }
-      ]
-    },
-    {
-      "task_key": "silver_ddl",
-      "notebook_task": {
-        "notebook_path": "02_silver/ddl/silver_ddl",
-        "source": "GIT"
-      },
-      "timeout_seconds": 1800,
-      "depends_on": [
-        { "task_key": "bronze_etl_trusts" },
-        { "task_key": "bronze_etl_trust_prices_csv" },
-        { "task_key": "bronze_etl_trust_prices_yf" },
-        { "task_key": "bronze_etl_index_prices" },
-        { "task_key": "bronze_etl_yf_pull_log" }
-      ]
-    },
-    {
-      "task_key": "silver_etl_monthly_performance",
-      "notebook_task": {
-        "notebook_path": "02_silver/etl/silver_etl_monthly_performance",
-        "source": "GIT"
-      },
-      "timeout_seconds": 1800,
-      "depends_on": [
-        { "task_key": "silver_ddl" }
-      ]
-    },
-    {
-      "task_key": "silver_etl_ticker",
-      "notebook_task": {
-        "notebook_path": "02_silver/etl/silver_etl_ticker",
-        "source": "GIT"
-      },
-      "timeout_seconds": 1800,
-      "depends_on": [
-        { "task_key": "silver_etl_monthly_performance" }
-      ]
-    },
-    {
-      "task_key": "gold_ddl",
-      "notebook_task": {
-        "notebook_path": "03_gold/ddl/gold_ddl",
-        "source": "GIT"
-      },
-      "timeout_seconds": 1800,
-      "depends_on": [
-        { "task_key": "silver_etl_ticker" }
-      ]
-    },
-    {
-      "task_key": "gold_etl_dim_date",
-      "notebook_task": {
-        "notebook_path": "03_gold/etl/gold_etl_dim_date",
-        "source": "GIT"
-      },
-      "timeout_seconds": 1800,
-      "depends_on": [
-        { "task_key": "gold_ddl" }
-      ]
-    },
-    {
-      "task_key": "gold_etl_dim_ticker",
-      "notebook_task": {
-        "notebook_path": "03_gold/etl/gold_etl_dim_ticker",
-        "source": "GIT"
-      },
-      "timeout_seconds": 1800,
-      "depends_on": [
-        { "task_key": "gold_ddl" }
-      ]
-    },
-    {
-      "task_key": "gold_etl_fact_monthly_performance",
-      "notebook_task": {
-        "notebook_path": "03_gold/etl/gold_etl_fact_monthly_performance",
-        "source": "GIT"
-      },
-      "timeout_seconds": 1800,
-      "depends_on": [
-        { "task_key": "gold_etl_dim_date" },
-        { "task_key": "gold_etl_dim_ticker" }
-      ]
-    },
-    {
-      "task_key": "gold_etl_fact_horizon_performance",
-      "notebook_task": {
-        "notebook_path": "03_gold/etl/gold_etl_fact_horizon_performance",
-        "source": "GIT"
-      },
-      "timeout_seconds": 1800,
-      "depends_on": [
-        { "task_key": "gold_etl_dim_ticker" }
-      ]
-    },
-    {
-      "task_key": "semantic_ddl",
-      "notebook_task": {
-        "notebook_path": "04_semantic/ddl/semantic_ddl",
-        "source": "GIT"
-      },
-      "timeout_seconds": 1800,
-      "depends_on": [
-        { "task_key": "gold_etl_fact_monthly_performance" },
-        { "task_key": "gold_etl_fact_horizon_performance" }
-      ]
-    },
-    {
-      "task_key": "semantic_etl_views",
-      "notebook_task": {
-        "notebook_path": "04_semantic/etl/semantic_etl_views",
-        "source": "GIT"
-      },
-      "timeout_seconds": 1800,
-      "depends_on": [
-        { "task_key": "semantic_ddl" }
-      ]
-    }
-  ]
+    "name":  "index-vs-trust-pipeline",
+    "description":  "Landing to Semantic, monthly. One task per object: \u003clayer\u003e_ddl_\u003cobject\u003e declares it, \u003clayer\u003e_etl_\u003cobject\u003e fills it.",
+    "max_concurrent_runs":  1,
+    "timeout_seconds":  3600,
+    "git_source":  {
+                       "git_url":  "https://github.com/lucg-gith/index-vs-trust-pipeline",
+                       "git_provider":  "gitHub",
+                       "git_branch":  "main"
+                   },
+    "schedule":  {
+                     "quartz_cron_expression":  "0 0 6 2 * ?",
+                     "timezone_id":  "Europe/London",
+                     "pause_status":  "UNPAUSED"
+                 },
+    "email_notifications":  {
+                                "on_failure":  [
+                                                   "garrelucia@gmail.com"
+                                               ]
+                            },
+    "tasks":  [
+                  {
+                      "task_key":  "landing_ddl",
+                      "notebook_task":  {
+                                            "notebook_path":  "00_landing/ddl/landing_ddl",
+                                            "source":  "GIT"
+                                        },
+                      "timeout_seconds":  1800
+                  },
+                  {
+                      "task_key":  "landing_ddl_trusts_raw",
+                      "notebook_task":  {
+                                            "notebook_path":  "00_landing/ddl/landing_ddl_trusts_raw",
+                                            "source":  "GIT"
+                                        },
+                      "timeout_seconds":  1800,
+                      "depends_on":  [
+                                         {
+                                             "task_key":  "landing_ddl"
+                                         }
+                                     ]
+                  },
+                  {
+                      "task_key":  "landing_ddl_trust_prices_csv_raw",
+                      "notebook_task":  {
+                                            "notebook_path":  "00_landing/ddl/landing_ddl_trust_prices_csv_raw",
+                                            "source":  "GIT"
+                                        },
+                      "timeout_seconds":  1800,
+                      "depends_on":  [
+                                         {
+                                             "task_key":  "landing_ddl"
+                                         }
+                                     ]
+                  },
+                  {
+                      "task_key":  "landing_ddl_trust_prices_yf_raw",
+                      "notebook_task":  {
+                                            "notebook_path":  "00_landing/ddl/landing_ddl_trust_prices_yf_raw",
+                                            "source":  "GIT"
+                                        },
+                      "timeout_seconds":  1800,
+                      "depends_on":  [
+                                         {
+                                             "task_key":  "landing_ddl"
+                                         }
+                                     ]
+                  },
+                  {
+                      "task_key":  "landing_ddl_index_prices_raw",
+                      "notebook_task":  {
+                                            "notebook_path":  "00_landing/ddl/landing_ddl_index_prices_raw",
+                                            "source":  "GIT"
+                                        },
+                      "timeout_seconds":  1800,
+                      "depends_on":  [
+                                         {
+                                             "task_key":  "landing_ddl"
+                                         }
+                                     ]
+                  },
+                  {
+                      "task_key":  "landing_ddl_yf_pull_log_raw",
+                      "notebook_task":  {
+                                            "notebook_path":  "00_landing/ddl/landing_ddl_yf_pull_log_raw",
+                                            "source":  "GIT"
+                                        },
+                      "timeout_seconds":  1800,
+                      "depends_on":  [
+                                         {
+                                             "task_key":  "landing_ddl"
+                                         }
+                                     ]
+                  },
+                  {
+                      "task_key":  "landing_etl_trusts",
+                      "notebook_task":  {
+                                            "notebook_path":  "00_landing/etl/landing_etl_trusts",
+                                            "source":  "GIT"
+                                        },
+                      "timeout_seconds":  1800,
+                      "depends_on":  [
+                                         {
+                                             "task_key":  "landing_ddl_trusts_raw"
+                                         },
+                                         {
+                                             "task_key":  "landing_ddl_trust_prices_csv_raw"
+                                         },
+                                         {
+                                             "task_key":  "landing_ddl_trust_prices_yf_raw"
+                                         },
+                                         {
+                                             "task_key":  "landing_ddl_index_prices_raw"
+                                         },
+                                         {
+                                             "task_key":  "landing_ddl_yf_pull_log_raw"
+                                         }
+                                     ]
+                  },
+                  {
+                      "task_key":  "landing_etl_trust_prices_csv",
+                      "notebook_task":  {
+                                            "notebook_path":  "00_landing/etl/landing_etl_trust_prices_csv",
+                                            "source":  "GIT"
+                                        },
+                      "timeout_seconds":  1800,
+                      "depends_on":  [
+                                         {
+                                             "task_key":  "landing_ddl_trusts_raw"
+                                         },
+                                         {
+                                             "task_key":  "landing_ddl_trust_prices_csv_raw"
+                                         },
+                                         {
+                                             "task_key":  "landing_ddl_trust_prices_yf_raw"
+                                         },
+                                         {
+                                             "task_key":  "landing_ddl_index_prices_raw"
+                                         },
+                                         {
+                                             "task_key":  "landing_ddl_yf_pull_log_raw"
+                                         }
+                                     ]
+                  },
+                  {
+                      "task_key":  "landing_etl_trust_prices_yf",
+                      "notebook_task":  {
+                                            "notebook_path":  "00_landing/etl/landing_etl_trust_prices_yf",
+                                            "source":  "GIT"
+                                        },
+                      "timeout_seconds":  1800,
+                      "depends_on":  [
+                                         {
+                                             "task_key":  "landing_ddl_trusts_raw"
+                                         },
+                                         {
+                                             "task_key":  "landing_ddl_trust_prices_csv_raw"
+                                         },
+                                         {
+                                             "task_key":  "landing_ddl_trust_prices_yf_raw"
+                                         },
+                                         {
+                                             "task_key":  "landing_ddl_index_prices_raw"
+                                         },
+                                         {
+                                             "task_key":  "landing_ddl_yf_pull_log_raw"
+                                         }
+                                     ],
+                      "max_retries":  1,
+                      "min_retry_interval_millis":  60000
+                  },
+                  {
+                      "task_key":  "landing_etl_index_prices",
+                      "notebook_task":  {
+                                            "notebook_path":  "00_landing/etl/landing_etl_index_prices",
+                                            "source":  "GIT"
+                                        },
+                      "timeout_seconds":  1800,
+                      "depends_on":  [
+                                         {
+                                             "task_key":  "landing_ddl_trusts_raw"
+                                         },
+                                         {
+                                             "task_key":  "landing_ddl_trust_prices_csv_raw"
+                                         },
+                                         {
+                                             "task_key":  "landing_ddl_trust_prices_yf_raw"
+                                         },
+                                         {
+                                             "task_key":  "landing_ddl_index_prices_raw"
+                                         },
+                                         {
+                                             "task_key":  "landing_ddl_yf_pull_log_raw"
+                                         }
+                                     ],
+                      "max_retries":  1,
+                      "min_retry_interval_millis":  60000
+                  },
+                  {
+                      "task_key":  "bronze_ddl",
+                      "notebook_task":  {
+                                            "notebook_path":  "01_bronze/ddl/bronze_ddl",
+                                            "source":  "GIT"
+                                        },
+                      "timeout_seconds":  1800,
+                      "depends_on":  [
+                                         {
+                                             "task_key":  "landing_etl_trusts"
+                                         },
+                                         {
+                                             "task_key":  "landing_etl_trust_prices_csv"
+                                         },
+                                         {
+                                             "task_key":  "landing_etl_trust_prices_yf"
+                                         },
+                                         {
+                                             "task_key":  "landing_etl_index_prices"
+                                         }
+                                     ]
+                  },
+                  {
+                      "task_key":  "bronze_ddl_trusts",
+                      "notebook_task":  {
+                                            "notebook_path":  "01_bronze/ddl/bronze_ddl_trusts",
+                                            "source":  "GIT"
+                                        },
+                      "timeout_seconds":  1800,
+                      "depends_on":  [
+                                         {
+                                             "task_key":  "bronze_ddl"
+                                         }
+                                     ]
+                  },
+                  {
+                      "task_key":  "bronze_ddl_trust_prices_csv",
+                      "notebook_task":  {
+                                            "notebook_path":  "01_bronze/ddl/bronze_ddl_trust_prices_csv",
+                                            "source":  "GIT"
+                                        },
+                      "timeout_seconds":  1800,
+                      "depends_on":  [
+                                         {
+                                             "task_key":  "bronze_ddl"
+                                         }
+                                     ]
+                  },
+                  {
+                      "task_key":  "bronze_ddl_trust_prices_yf",
+                      "notebook_task":  {
+                                            "notebook_path":  "01_bronze/ddl/bronze_ddl_trust_prices_yf",
+                                            "source":  "GIT"
+                                        },
+                      "timeout_seconds":  1800,
+                      "depends_on":  [
+                                         {
+                                             "task_key":  "bronze_ddl"
+                                         }
+                                     ]
+                  },
+                  {
+                      "task_key":  "bronze_ddl_index_prices",
+                      "notebook_task":  {
+                                            "notebook_path":  "01_bronze/ddl/bronze_ddl_index_prices",
+                                            "source":  "GIT"
+                                        },
+                      "timeout_seconds":  1800,
+                      "depends_on":  [
+                                         {
+                                             "task_key":  "bronze_ddl"
+                                         }
+                                     ]
+                  },
+                  {
+                      "task_key":  "bronze_ddl_yf_pull_log",
+                      "notebook_task":  {
+                                            "notebook_path":  "01_bronze/ddl/bronze_ddl_yf_pull_log",
+                                            "source":  "GIT"
+                                        },
+                      "timeout_seconds":  1800,
+                      "depends_on":  [
+                                         {
+                                             "task_key":  "bronze_ddl"
+                                         }
+                                     ]
+                  },
+                  {
+                      "task_key":  "bronze_etl_trusts",
+                      "notebook_task":  {
+                                            "notebook_path":  "01_bronze/etl/bronze_etl_trusts",
+                                            "source":  "GIT"
+                                        },
+                      "timeout_seconds":  1800,
+                      "depends_on":  [
+                                         {
+                                             "task_key":  "bronze_ddl_trusts"
+                                         },
+                                         {
+                                             "task_key":  "bronze_ddl_trust_prices_csv"
+                                         },
+                                         {
+                                             "task_key":  "bronze_ddl_trust_prices_yf"
+                                         },
+                                         {
+                                             "task_key":  "bronze_ddl_index_prices"
+                                         },
+                                         {
+                                             "task_key":  "bronze_ddl_yf_pull_log"
+                                         }
+                                     ]
+                  },
+                  {
+                      "task_key":  "bronze_etl_trust_prices_csv",
+                      "notebook_task":  {
+                                            "notebook_path":  "01_bronze/etl/bronze_etl_trust_prices_csv",
+                                            "source":  "GIT"
+                                        },
+                      "timeout_seconds":  1800,
+                      "depends_on":  [
+                                         {
+                                             "task_key":  "bronze_ddl_trusts"
+                                         },
+                                         {
+                                             "task_key":  "bronze_ddl_trust_prices_csv"
+                                         },
+                                         {
+                                             "task_key":  "bronze_ddl_trust_prices_yf"
+                                         },
+                                         {
+                                             "task_key":  "bronze_ddl_index_prices"
+                                         },
+                                         {
+                                             "task_key":  "bronze_ddl_yf_pull_log"
+                                         }
+                                     ]
+                  },
+                  {
+                      "task_key":  "bronze_etl_trust_prices_yf",
+                      "notebook_task":  {
+                                            "notebook_path":  "01_bronze/etl/bronze_etl_trust_prices_yf",
+                                            "source":  "GIT"
+                                        },
+                      "timeout_seconds":  1800,
+                      "depends_on":  [
+                                         {
+                                             "task_key":  "bronze_ddl_trusts"
+                                         },
+                                         {
+                                             "task_key":  "bronze_ddl_trust_prices_csv"
+                                         },
+                                         {
+                                             "task_key":  "bronze_ddl_trust_prices_yf"
+                                         },
+                                         {
+                                             "task_key":  "bronze_ddl_index_prices"
+                                         },
+                                         {
+                                             "task_key":  "bronze_ddl_yf_pull_log"
+                                         }
+                                     ]
+                  },
+                  {
+                      "task_key":  "bronze_etl_index_prices",
+                      "notebook_task":  {
+                                            "notebook_path":  "01_bronze/etl/bronze_etl_index_prices",
+                                            "source":  "GIT"
+                                        },
+                      "timeout_seconds":  1800,
+                      "depends_on":  [
+                                         {
+                                             "task_key":  "bronze_ddl_trusts"
+                                         },
+                                         {
+                                             "task_key":  "bronze_ddl_trust_prices_csv"
+                                         },
+                                         {
+                                             "task_key":  "bronze_ddl_trust_prices_yf"
+                                         },
+                                         {
+                                             "task_key":  "bronze_ddl_index_prices"
+                                         },
+                                         {
+                                             "task_key":  "bronze_ddl_yf_pull_log"
+                                         }
+                                     ]
+                  },
+                  {
+                      "task_key":  "bronze_etl_yf_pull_log",
+                      "notebook_task":  {
+                                            "notebook_path":  "01_bronze/etl/bronze_etl_yf_pull_log",
+                                            "source":  "GIT"
+                                        },
+                      "timeout_seconds":  1800,
+                      "depends_on":  [
+                                         {
+                                             "task_key":  "bronze_ddl_trusts"
+                                         },
+                                         {
+                                             "task_key":  "bronze_ddl_trust_prices_csv"
+                                         },
+                                         {
+                                             "task_key":  "bronze_ddl_trust_prices_yf"
+                                         },
+                                         {
+                                             "task_key":  "bronze_ddl_index_prices"
+                                         },
+                                         {
+                                             "task_key":  "bronze_ddl_yf_pull_log"
+                                         }
+                                     ]
+                  },
+                  {
+                      "task_key":  "silver_ddl",
+                      "notebook_task":  {
+                                            "notebook_path":  "02_silver/ddl/silver_ddl",
+                                            "source":  "GIT"
+                                        },
+                      "timeout_seconds":  1800,
+                      "depends_on":  [
+                                         {
+                                             "task_key":  "bronze_etl_trusts"
+                                         },
+                                         {
+                                             "task_key":  "bronze_etl_trust_prices_csv"
+                                         },
+                                         {
+                                             "task_key":  "bronze_etl_trust_prices_yf"
+                                         },
+                                         {
+                                             "task_key":  "bronze_etl_index_prices"
+                                         },
+                                         {
+                                             "task_key":  "bronze_etl_yf_pull_log"
+                                         }
+                                     ]
+                  },
+                  {
+                      "task_key":  "silver_ddl_monthly_performance",
+                      "notebook_task":  {
+                                            "notebook_path":  "02_silver/ddl/silver_ddl_monthly_performance",
+                                            "source":  "GIT"
+                                        },
+                      "timeout_seconds":  1800,
+                      "depends_on":  [
+                                         {
+                                             "task_key":  "silver_ddl"
+                                         }
+                                     ]
+                  },
+                  {
+                      "task_key":  "silver_ddl_ticker",
+                      "notebook_task":  {
+                                            "notebook_path":  "02_silver/ddl/silver_ddl_ticker",
+                                            "source":  "GIT"
+                                        },
+                      "timeout_seconds":  1800,
+                      "depends_on":  [
+                                         {
+                                             "task_key":  "silver_ddl"
+                                         }
+                                     ]
+                  },
+                  {
+                      "task_key":  "silver_ddl_price_repair_log",
+                      "notebook_task":  {
+                                            "notebook_path":  "02_silver/ddl/silver_ddl_price_repair_log",
+                                            "source":  "GIT"
+                                        },
+                      "timeout_seconds":  1800,
+                      "depends_on":  [
+                                         {
+                                             "task_key":  "silver_ddl"
+                                         }
+                                     ]
+                  },
+                  {
+                      "task_key":  "silver_etl_monthly_performance",
+                      "notebook_task":  {
+                                            "notebook_path":  "02_silver/etl/silver_etl_monthly_performance",
+                                            "source":  "GIT"
+                                        },
+                      "timeout_seconds":  1800,
+                      "depends_on":  [
+                                         {
+                                             "task_key":  "silver_ddl_monthly_performance"
+                                         },
+                                         {
+                                             "task_key":  "silver_ddl_ticker"
+                                         },
+                                         {
+                                             "task_key":  "silver_ddl_price_repair_log"
+                                         }
+                                     ]
+                  },
+                  {
+                      "task_key":  "silver_etl_ticker",
+                      "notebook_task":  {
+                                            "notebook_path":  "02_silver/etl/silver_etl_ticker",
+                                            "source":  "GIT"
+                                        },
+                      "timeout_seconds":  1800,
+                      "depends_on":  [
+                                         {
+                                             "task_key":  "silver_etl_monthly_performance"
+                                         }
+                                     ]
+                  },
+                  {
+                      "task_key":  "gold_ddl",
+                      "notebook_task":  {
+                                            "notebook_path":  "03_gold/ddl/gold_ddl",
+                                            "source":  "GIT"
+                                        },
+                      "timeout_seconds":  1800,
+                      "depends_on":  [
+                                         {
+                                             "task_key":  "silver_etl_ticker"
+                                         }
+                                     ]
+                  },
+                  {
+                      "task_key":  "gold_ddl_dim_date",
+                      "notebook_task":  {
+                                            "notebook_path":  "03_gold/ddl/gold_ddl_dim_date",
+                                            "source":  "GIT"
+                                        },
+                      "timeout_seconds":  1800,
+                      "depends_on":  [
+                                         {
+                                             "task_key":  "gold_ddl"
+                                         }
+                                     ]
+                  },
+                  {
+                      "task_key":  "gold_ddl_dim_ticker",
+                      "notebook_task":  {
+                                            "notebook_path":  "03_gold/ddl/gold_ddl_dim_ticker",
+                                            "source":  "GIT"
+                                        },
+                      "timeout_seconds":  1800,
+                      "depends_on":  [
+                                         {
+                                             "task_key":  "gold_ddl"
+                                         }
+                                     ]
+                  },
+                  {
+                      "task_key":  "gold_ddl_fact_monthly_performance",
+                      "notebook_task":  {
+                                            "notebook_path":  "03_gold/ddl/gold_ddl_fact_monthly_performance",
+                                            "source":  "GIT"
+                                        },
+                      "timeout_seconds":  1800,
+                      "depends_on":  [
+                                         {
+                                             "task_key":  "gold_ddl"
+                                         }
+                                     ]
+                  },
+                  {
+                      "task_key":  "gold_ddl_fact_horizon_performance",
+                      "notebook_task":  {
+                                            "notebook_path":  "03_gold/ddl/gold_ddl_fact_horizon_performance",
+                                            "source":  "GIT"
+                                        },
+                      "timeout_seconds":  1800,
+                      "depends_on":  [
+                                         {
+                                             "task_key":  "gold_ddl"
+                                         }
+                                     ]
+                  },
+                  {
+                      "task_key":  "gold_etl_dim_date",
+                      "notebook_task":  {
+                                            "notebook_path":  "03_gold/etl/gold_etl_dim_date",
+                                            "source":  "GIT"
+                                        },
+                      "timeout_seconds":  1800,
+                      "depends_on":  [
+                                         {
+                                             "task_key":  "gold_ddl_dim_date"
+                                         },
+                                         {
+                                             "task_key":  "gold_ddl_dim_ticker"
+                                         },
+                                         {
+                                             "task_key":  "gold_ddl_fact_monthly_performance"
+                                         },
+                                         {
+                                             "task_key":  "gold_ddl_fact_horizon_performance"
+                                         }
+                                     ]
+                  },
+                  {
+                      "task_key":  "gold_etl_dim_ticker",
+                      "notebook_task":  {
+                                            "notebook_path":  "03_gold/etl/gold_etl_dim_ticker",
+                                            "source":  "GIT"
+                                        },
+                      "timeout_seconds":  1800,
+                      "depends_on":  [
+                                         {
+                                             "task_key":  "gold_ddl_dim_date"
+                                         },
+                                         {
+                                             "task_key":  "gold_ddl_dim_ticker"
+                                         },
+                                         {
+                                             "task_key":  "gold_ddl_fact_monthly_performance"
+                                         },
+                                         {
+                                             "task_key":  "gold_ddl_fact_horizon_performance"
+                                         }
+                                     ]
+                  },
+                  {
+                      "task_key":  "gold_etl_fact_monthly_performance",
+                      "notebook_task":  {
+                                            "notebook_path":  "03_gold/etl/gold_etl_fact_monthly_performance",
+                                            "source":  "GIT"
+                                        },
+                      "timeout_seconds":  1800,
+                      "depends_on":  [
+                                         {
+                                             "task_key":  "gold_etl_dim_date"
+                                         },
+                                         {
+                                             "task_key":  "gold_etl_dim_ticker"
+                                         }
+                                     ]
+                  },
+                  {
+                      "task_key":  "gold_etl_fact_horizon_performance",
+                      "notebook_task":  {
+                                            "notebook_path":  "03_gold/etl/gold_etl_fact_horizon_performance",
+                                            "source":  "GIT"
+                                        },
+                      "timeout_seconds":  1800,
+                      "depends_on":  [
+                                         {
+                                             "task_key":  "gold_etl_dim_ticker"
+                                         }
+                                     ]
+                  },
+                  {
+                      "task_key":  "semantic_ddl",
+                      "notebook_task":  {
+                                            "notebook_path":  "04_semantic/ddl/semantic_ddl",
+                                            "source":  "GIT"
+                                        },
+                      "timeout_seconds":  1800,
+                      "depends_on":  [
+                                         {
+                                             "task_key":  "gold_etl_fact_monthly_performance"
+                                         },
+                                         {
+                                             "task_key":  "gold_etl_fact_horizon_performance"
+                                         }
+                                     ]
+                  },
+                  {
+                      "task_key":  "semantic_ddl_v_beat_rate",
+                      "notebook_task":  {
+                                            "notebook_path":  "04_semantic/ddl/semantic_ddl_v_beat_rate",
+                                            "source":  "GIT"
+                                        },
+                      "timeout_seconds":  1800,
+                      "depends_on":  [
+                                         {
+                                             "task_key":  "semantic_ddl"
+                                         }
+                                     ]
+                  },
+                  {
+                      "task_key":  "semantic_ddl_v_beat_rate_by_cut",
+                      "notebook_task":  {
+                                            "notebook_path":  "04_semantic/ddl/semantic_ddl_v_beat_rate_by_cut",
+                                            "source":  "GIT"
+                                        },
+                      "timeout_seconds":  1800,
+                      "depends_on":  [
+                                         {
+                                             "task_key":  "semantic_ddl"
+                                         }
+                                     ]
+                  },
+                  {
+                      "task_key":  "semantic_ddl_v_growth_of_100",
+                      "notebook_task":  {
+                                            "notebook_path":  "04_semantic/ddl/semantic_ddl_v_growth_of_100",
+                                            "source":  "GIT"
+                                        },
+                      "timeout_seconds":  1800,
+                      "depends_on":  [
+                                         {
+                                             "task_key":  "semantic_ddl"
+                                         }
+                                     ]
+                  },
+                  {
+                      "task_key":  "semantic_ddl_v_leaderboard",
+                      "notebook_task":  {
+                                            "notebook_path":  "04_semantic/ddl/semantic_ddl_v_leaderboard",
+                                            "source":  "GIT"
+                                        },
+                      "timeout_seconds":  1800,
+                      "depends_on":  [
+                                         {
+                                             "task_key":  "semantic_ddl"
+                                         }
+                                     ]
+                  },
+                  {
+                      "task_key":  "semantic_ddl_v_measure",
+                      "notebook_task":  {
+                                            "notebook_path":  "04_semantic/ddl/semantic_ddl_v_measure",
+                                            "source":  "GIT"
+                                        },
+                      "timeout_seconds":  1800,
+                      "depends_on":  [
+                                         {
+                                             "task_key":  "semantic_ddl"
+                                         }
+                                     ]
+                  },
+                  {
+                      "task_key":  "semantic_ddl_v_universe",
+                      "notebook_task":  {
+                                            "notebook_path":  "04_semantic/ddl/semantic_ddl_v_universe",
+                                            "source":  "GIT"
+                                        },
+                      "timeout_seconds":  1800,
+                      "depends_on":  [
+                                         {
+                                             "task_key":  "semantic_ddl"
+                                         }
+                                     ]
+                  },
+                  {
+                      "task_key":  "semantic_ddl_v_measure_summary",
+                      "notebook_task":  {
+                                            "notebook_path":  "04_semantic/ddl/semantic_ddl_v_measure_summary",
+                                            "source":  "GIT"
+                                        },
+                      "timeout_seconds":  1800,
+                      "depends_on":  [
+                                         {
+                                             "task_key":  "semantic_ddl_v_measure"
+                                         }
+                                     ]
+                  }
+              ]
 }
