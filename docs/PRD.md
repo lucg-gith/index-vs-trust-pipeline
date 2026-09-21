@@ -1,7 +1,11 @@
 # PRD — Do UK investment trusts beat the S&P 500?
 
 **Last updated:** 2026-09-21
-**Current position:** **Step 8 of 9 — orchestration**, specced and awaiting approval:
+**Current position:** **Step 8b — one DDL task per object.** The spec is written and awaiting
+approval: `specs/05_orchestration/ddl-split.md`. Every table's `CREATE TABLE` currently sits
+inside the ETL notebook that loads it, so the board shows one DDL box per layer instead of one
+per table; splitting them takes the job from 21 tasks to 44 and gives five identical blocks of
+schema → DDL column → ETL column. **Step 8, orchestration**, is specced and awaiting approval:
 `specs/05_orchestration/workflow.md`, one job of 21 tasks on a monthly schedule, sourced from
 GitHub rather than the workspace. Revised 2026-09-20 to layer-first task names
 (`bronze_ddl`, `gold_etl_dim_ticker`) with the notebooks renamed to match, and to a layer-gate
@@ -284,15 +288,16 @@ Specs live in `specs/<layer>/` and are gitignored — working notes, not deliver
 |---|---|:--:|:--:|:--:|:--:|:--:|
 | 0 | **Design** — close the design tree | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 1 | **Landing** — 4 ingests plus schema | ✅ | ✅ | ✅ | ✅ | ✅ |
-| 4b | **Silver revision** — repair the half-applied splits | ✅ | ✅ | ✅ | ✅ | ✅ |
+| 2 | **Bronze** — all-STRING recast | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 3 | **EDA** — evidence for Silver's rules | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 4 | **Silver** — scale repair, currency, total return | ✅ | ✅ | ✅ | ✅ | ✅ |
-| 4b | **Silver revision** — repair the half-applied splits | ✅ | ✅ | ✅ | ✅ | ⬜ |
+| 4b | **Silver revision** — repair the half-applied splits | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 5 | **Gold dims** — `dim_date`, `dim_ticker` SCD2 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 6 | **Gold facts** — monthly plus horizon, return + risk | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 7a | **Semantic** — five thin views over Gold | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 7b | **Dashboard** — one page, seven tiles | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 8 | **Orchestration** — one monthly Workflow | ✅ | ✅ | ✅ | ✅ | ⬜ |
+| 8b | **One DDL task per object** — 21 tasks becomes 44 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | 9 | **Presentation** — README, video, LinkedIn | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ### Open at this moment
