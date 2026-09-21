@@ -106,10 +106,16 @@ with nothing snowflaked:
 
 ```
 dim_date  ──────────┐
-                    ├──►  fact_monthly_performance
-dim_ticker (SCD2) ──┤     fact_horizon_performance
-                    ┘
+                    ├──►  fact_monthly_performance   (ticker, month)
+dim_ticker (SCD2) ──┤            │
+                    ┘            └──►  fact_horizon_performance   (ticker, horizon)
+                                        ▲          ▲
+                    both dimensions join this fact directly too
 ```
+
+The two facts sit at different grains, and the second is **derived from the first**:
+`fact_horizon_performance` is built from `fact_monthly_performance`, not from Silver alongside
+it. The aggregate is computed from the detail it aggregates, so the two cannot drift apart.
 
 **Fact tables:**
 
@@ -191,6 +197,13 @@ This matters more than it sounds. UK investment trusts yield roughly 3–5% a ye
 SPY's 1.3%, so comparing on price alone would hand the index a systematic head start of
 several points a year and understate the beat rate.
 
+**Both sides are already net of costs, so no fee column is needed.** A trust's ongoing
+charges are deducted from its own assets, which reduces its net asset value and feeds
+through to its share price; SPY's expense ratio works the same way. Subtracting a fee on
+top would double-count it. The gap in those charges is wide — UK trusts typically run
+0.4–2% a year against roughly 0.09% for SPY — so the beat rate compares what an investor
+actually keeps *after* paying for active management.
+
 **Yahoo's `Adj_Close` is deliberately not used.** It is dividend-adjusted for SPY, but for
 the UK trusts Yahoo records the dividend events and never applies them — 97 of 100 trusts
 show an adjustment of under 0.5%. `HFEL` is the clearest case: 40 dividends totalling 232.6p
@@ -204,6 +217,15 @@ return from `Close` and `Dividends` rather than trusting the adjusted column.
   returns. Converting would import GBP/USD movement into a question about fund performance.
 - **The delisted cohort is two trusts**, so survivorship demonstrates the mechanism rather
   than sizing the effect.
+- **These are share-price returns, not NAV returns.** Investment trusts are closed-ended, so
+  their shares trade at a discount or premium to net asset value, and that movement forms
+  part of the measured return. This is deliberate — the share price is what an investor
+  actually receives — but a trust's figure therefore reflects both its manager and its
+  rating. SPY, being an ETF, tracks its NAV closely, so the effect is one-sided.
+- **The universe is a subset.** The AIC represents roughly 350 closed-ended companies; this
+  study covers 118 of them, spanning 36 AIC sectors. Any skew is likely to favour large,
+  well-known survivors — which would make the low beat rate conservative rather than
+  inflated.
 - **Income is cumulative over the window, not an annual yield** — the index's 69.3% at
   fifteen years is dividends over fifteen years as a share of what you paid.
 - Yahoo quotes 3 trusts in USD and 1 in EUR rather than GBp; Silver normalises the scale.
