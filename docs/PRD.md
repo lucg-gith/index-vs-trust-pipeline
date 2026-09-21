@@ -1,6 +1,15 @@
 # PRD — Do UK investment trusts beat the S&P 500?
 
 **Last updated:** 2026-09-21
+
+**Step 9, deliverable 1 — the README rewrite — is done (2026-09-21).** Restructured into the
+standard portfolio sections (Description and Objectives, Results, Architecture, Technologies,
+Data Modeling, Analytical Dashboard, Data Sources, Repository Structure, How to Run) and
+**truth-passed against the warehouse**: every figure in it was re-queried from `semantic.v_beat_rate`,
+`gold.fact_horizon_performance` and `bronze.yf_pull_log` rather than copied forward. Three stale
+claims were corrected — 18 Yahoo deletions not 16, five horizons not four, and 96 usable tickers
+(90 active trusts, 3 delisted, 3 index) rather than the old 100/6 split.
+
 **Current position:** **Step 10, the restructure, is complete and verified.** The repository
 is now organised by *what a thing is* rather than which layer it sits in: `ddl/` holds the 23
 declarations, `etl/` holds the 15 loads, and `eda/`, `dashboard/` and `orchestration/` sit
@@ -318,8 +327,9 @@ Specs live in `specs/<layer>/` and are gitignored — working notes, not deliver
 | 7b | **Dashboard** — one page, seven tiles | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 8 | **Orchestration** — one monthly Workflow | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 8b | **One DDL task per object** — 21 tasks becomes 44 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| 9 | **Presentation** — README, images, video, PDF guide, LinkedIn | ✅ | 🔵 | ⬜ | ⬜ | ⬜ |
+| 9 | **Presentation** — README, images, deck, video, LinkedIn | ✅ | ✅ | ✅ | 🔵 | ⬜ |
 | 10 | **Restructure** — `ddl/` and `etl/`, DDL off the schedule | ✅ | ✅ | ✅ | ✅ | ✅ |
+| 11 | **Exclude delisted** — Gold, views, dashboard | ✅ | 🔵 | ⬜ | ⬜ | ⬜ |
 
 ### Open at this moment
 
@@ -508,7 +518,7 @@ acceptance test is that nothing moves: 445 horizon rows, 15,604 monthly rows, an
 | **yfinance is now a single point of failure.** It is an unofficial scraper and both sides of the comparison depend on it | The biggest risk in the project since 2026-09-19. Landing OVERWRITEs per run, so a bad pull replaces a good one. Mitigation: the pull log makes a degraded run obvious at a glance, and the verification cells assert exact symbol counts rather than "it ran" |
 | **The scale repair is the hardest piece.** 36 of 96 trusts carry mis-scaled rows inside the window, 743 in total, and the factor differs by ticker — CGT a clean 10x, CLDN roughly 1400x | Detect per row against the median of neighbouring months, derive the ratio, rescale. Step 3 must prove the detection works before step 4 relies on it. Excluding the affected trusts instead would discard 37% of the sample |
 | **The total-return calculation is the number everything rests on** | One formula, applied identically to trusts and SPY so any error cancels on both sides. Re-measured from `gold.fact_horizon_performance` 2026-09-21: HFEL over 10 years, price return **−22.9%** against total return **+74.7%**. *The older +39.0% figure did not reinvest the dividends while the SPY figure it was paired with did — an apples-to-oranges the pipeline does not repeat.* |
-| **Survivorship rests on 2 trusts** | Reframed: the claim is the mechanism, evidenced by Yahoo's 16 deletions, not a precise effect size. Stated as a limitation in the README rather than buried |
+| **Survivorship rests on 2 trusts** | Reframed: the claim is the mechanism, evidenced by Yahoo's 18 deletions, not a precise effect size. Stated as a limitation in the README rather than buried |
 | **SCD2 has no history on run 1** — the source is a snapshot | Expected and explained. Demo it live by changing a manager and re-running |
 | Time runs out before step 9 | Steps 1–6 clear "Ideal" on their own. Dashboard and video are bonus — cut from the end, not the middle |
 | Trusts with no manager in the metadata | They stay in `dim_ticker` with a null manager. Not dropped — the universe stays honest |
@@ -518,16 +528,16 @@ acceptance test is that nothing moves: 445 horizon rows, 15,604 monthly rows, an
 ## 9. Deliverables checklist
 
 - [ ] Pipeline running end-to-end on a schedule
-- [ ] README: one-line what, architecture diagram, tech list, how to run, results
+- [x] README: one-line what, architecture diagram, tech list, how to run, results
 - [ ] Dashboard screenshots
 - [ ] 5–10 minute video with voice
 - [ ] LinkedIn post linking repo and video
-- [ ] **Stated openly in the README:** returns are **total return** on both sides, built in
+- [x] **Stated openly in the README:** returns are **total return** on both sides, built in
       Silver from `Close` plus `Dividends`, because Yahoo's `Adj_Close` applies dividends
       for SPY but not for UK trusts
-- [ ] **Also stated openly:** the delisted cohort is 2 trusts, so the survivorship figure
+- [x] **Also stated openly:** the delisted cohort is 2 trusts, so the survivorship figure
       illustrates the mechanism rather than sizing the effect
-- [ ] **Also stated openly:** returns are compared in each side's own currency, with no
+- [x] **Also stated openly:** returns are compared in each side's own currency, with no
       GBP/USD conversion
 
 ---
