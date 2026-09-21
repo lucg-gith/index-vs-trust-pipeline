@@ -96,27 +96,44 @@ Every cleaning rule is backed by evidence in the EDA notebook rather than assert
 
 ## Repository layout
 
+The repository is organised by **what a thing is**, not by which layer it belongs to: a
+declaration you run once, or a load that runs every month.
+
 ```
-00_landing/     ingest notebooks and schema DDL
-01_bronze/      all-STRING recast, plus the EDA that justifies Silver's rules
-02_silver/      scale repair, currency normalisation, total return
-03_gold/        dimensions and facts
-04_semantic/    views for the dashboard
-05_orchestration/  the Workflow definition, one JSON file
+ddl/            declares the catalog — run once, not on any schedule
+  ddl_schemas     the five schemas, one notebook
+  00_landing/ 01_bronze/ 02_silver/ 03_gold/ 04_semantic/   one notebook per table or view
+
+etl/            the monthly pipeline — this is what the Workflow runs
+  00_landing/ 01_bronze/ 02_silver/ 03_gold/                one notebook per load
+                (semantic has no ETL: a view is its own definition)
+
+eda/            the profiling that justifies each of Silver's cleaning rules
+dashboard/      the Lakeview definition, plus a Power BI rebuild sheet
+orchestration/  two job definitions — workflow.json (monthly) and setup.json (once)
 data/           the committed source CSVs
 docs/           the PRD and the star-schema diagram
 ```
 
-Every notebook is named `<layer>_<ddl|etl>[_<object>]` — `bronze_ddl`, `gold_etl_dim_ticker` —
-and that name is also its task key in the Workflow, so a box on the job graph and a file in the
-repository carry the same name.
+`CREATE TABLE` is deployment, not pipeline. The DDL runs once, from its own unscheduled job;
+the monthly job is **15 ETL tasks** and nothing else. Re-running `CREATE TABLE IF NOT EXISTS`
+every month is work that can only ever do nothing.
+
+Every notebook is named `<layer>_<ddl|etl>[_<object>]` — `bronze_ddl_trusts`,
+`gold_etl_dim_ticker` — and that name is also its task key, so a box on the job graph and a
+file in the repository carry the same name.
 
 ## How to run
 
-The `.ipynb` files are Databricks notebooks. Clone the repository into a Databricks Git folder
-and run the layers in order — Landing, Bronze, Silver, Gold, Semantic — or attach them to a
-single Workflow and run that. Every notebook ends with a verification cell whose expected
-answer is known in advance.
+The `.ipynb` files are Databricks notebooks. Clone the repository into a Databricks Git folder,
+then:
+
+1. **Once** — run the setup job from `orchestration/setup.json`. It creates the five schemas,
+   then every table and view. Nothing here runs again.
+2. **Every month** — the job from `orchestration/workflow.json` runs itself, on the 2nd at
+   06:00 Europe/London. Trigger it by hand to see it go.
+
+Every notebook ends with a verification cell whose expected answer is known in advance.
 
 ## Results
 

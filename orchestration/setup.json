@@ -1,0 +1,324 @@
+{
+  "name": "index-vs-trust-pipeline-setup",
+  "description": "Declares the catalog: five schemas, then one task per table and view. Run once, by hand. Deliberately has no schedule.",
+  "max_concurrent_runs": 1,
+  "timeout_seconds": 3600,
+  "git_source": {
+    "git_url": "https://github.com/lucg-gith/index-vs-trust-pipeline",
+    "git_provider": "gitHub",
+    "git_branch": "main"
+  },
+  "email_notifications": {
+    "on_failure": [
+      "garrelucia@gmail.com"
+    ]
+  },
+  "tasks": [
+    {
+      "task_key": "ddl_schemas",
+      "notebook_task": {
+        "notebook_path": "ddl/ddl_schemas",
+        "source": "GIT"
+      },
+      "timeout_seconds": 1800
+    },
+    {
+      "task_key": "landing_ddl_trusts_raw",
+      "notebook_task": {
+        "notebook_path": "ddl/00_landing/landing_ddl_trusts_raw",
+        "source": "GIT"
+      },
+      "timeout_seconds": 1800,
+      "depends_on": [
+        {
+          "task_key": "ddl_schemas"
+        }
+      ]
+    },
+    {
+      "task_key": "landing_ddl_trust_prices_csv_raw",
+      "notebook_task": {
+        "notebook_path": "ddl/00_landing/landing_ddl_trust_prices_csv_raw",
+        "source": "GIT"
+      },
+      "timeout_seconds": 1800,
+      "depends_on": [
+        {
+          "task_key": "ddl_schemas"
+        }
+      ]
+    },
+    {
+      "task_key": "landing_ddl_trust_prices_yf_raw",
+      "notebook_task": {
+        "notebook_path": "ddl/00_landing/landing_ddl_trust_prices_yf_raw",
+        "source": "GIT"
+      },
+      "timeout_seconds": 1800,
+      "depends_on": [
+        {
+          "task_key": "ddl_schemas"
+        }
+      ]
+    },
+    {
+      "task_key": "landing_ddl_index_prices_raw",
+      "notebook_task": {
+        "notebook_path": "ddl/00_landing/landing_ddl_index_prices_raw",
+        "source": "GIT"
+      },
+      "timeout_seconds": 1800,
+      "depends_on": [
+        {
+          "task_key": "ddl_schemas"
+        }
+      ]
+    },
+    {
+      "task_key": "landing_ddl_yf_pull_log_raw",
+      "notebook_task": {
+        "notebook_path": "ddl/00_landing/landing_ddl_yf_pull_log_raw",
+        "source": "GIT"
+      },
+      "timeout_seconds": 1800,
+      "depends_on": [
+        {
+          "task_key": "ddl_schemas"
+        }
+      ]
+    },
+    {
+      "task_key": "bronze_ddl_trusts",
+      "notebook_task": {
+        "notebook_path": "ddl/01_bronze/bronze_ddl_trusts",
+        "source": "GIT"
+      },
+      "timeout_seconds": 1800,
+      "depends_on": [
+        {
+          "task_key": "ddl_schemas"
+        }
+      ]
+    },
+    {
+      "task_key": "bronze_ddl_trust_prices_csv",
+      "notebook_task": {
+        "notebook_path": "ddl/01_bronze/bronze_ddl_trust_prices_csv",
+        "source": "GIT"
+      },
+      "timeout_seconds": 1800,
+      "depends_on": [
+        {
+          "task_key": "ddl_schemas"
+        }
+      ]
+    },
+    {
+      "task_key": "bronze_ddl_trust_prices_yf",
+      "notebook_task": {
+        "notebook_path": "ddl/01_bronze/bronze_ddl_trust_prices_yf",
+        "source": "GIT"
+      },
+      "timeout_seconds": 1800,
+      "depends_on": [
+        {
+          "task_key": "ddl_schemas"
+        }
+      ]
+    },
+    {
+      "task_key": "bronze_ddl_index_prices",
+      "notebook_task": {
+        "notebook_path": "ddl/01_bronze/bronze_ddl_index_prices",
+        "source": "GIT"
+      },
+      "timeout_seconds": 1800,
+      "depends_on": [
+        {
+          "task_key": "ddl_schemas"
+        }
+      ]
+    },
+    {
+      "task_key": "bronze_ddl_yf_pull_log",
+      "notebook_task": {
+        "notebook_path": "ddl/01_bronze/bronze_ddl_yf_pull_log",
+        "source": "GIT"
+      },
+      "timeout_seconds": 1800,
+      "depends_on": [
+        {
+          "task_key": "ddl_schemas"
+        }
+      ]
+    },
+    {
+      "task_key": "silver_ddl_monthly_performance",
+      "notebook_task": {
+        "notebook_path": "ddl/02_silver/silver_ddl_monthly_performance",
+        "source": "GIT"
+      },
+      "timeout_seconds": 1800,
+      "depends_on": [
+        {
+          "task_key": "ddl_schemas"
+        }
+      ]
+    },
+    {
+      "task_key": "silver_ddl_ticker",
+      "notebook_task": {
+        "notebook_path": "ddl/02_silver/silver_ddl_ticker",
+        "source": "GIT"
+      },
+      "timeout_seconds": 1800,
+      "depends_on": [
+        {
+          "task_key": "ddl_schemas"
+        }
+      ]
+    },
+    {
+      "task_key": "silver_ddl_price_repair_log",
+      "notebook_task": {
+        "notebook_path": "ddl/02_silver/silver_ddl_price_repair_log",
+        "source": "GIT"
+      },
+      "timeout_seconds": 1800,
+      "depends_on": [
+        {
+          "task_key": "ddl_schemas"
+        }
+      ]
+    },
+    {
+      "task_key": "gold_ddl_dim_date",
+      "notebook_task": {
+        "notebook_path": "ddl/03_gold/gold_ddl_dim_date",
+        "source": "GIT"
+      },
+      "timeout_seconds": 1800,
+      "depends_on": [
+        {
+          "task_key": "ddl_schemas"
+        }
+      ]
+    },
+    {
+      "task_key": "gold_ddl_dim_ticker",
+      "notebook_task": {
+        "notebook_path": "ddl/03_gold/gold_ddl_dim_ticker",
+        "source": "GIT"
+      },
+      "timeout_seconds": 1800,
+      "depends_on": [
+        {
+          "task_key": "ddl_schemas"
+        }
+      ]
+    },
+    {
+      "task_key": "gold_ddl_fact_monthly_performance",
+      "notebook_task": {
+        "notebook_path": "ddl/03_gold/gold_ddl_fact_monthly_performance",
+        "source": "GIT"
+      },
+      "timeout_seconds": 1800,
+      "depends_on": [
+        {
+          "task_key": "ddl_schemas"
+        }
+      ]
+    },
+    {
+      "task_key": "gold_ddl_fact_horizon_performance",
+      "notebook_task": {
+        "notebook_path": "ddl/03_gold/gold_ddl_fact_horizon_performance",
+        "source": "GIT"
+      },
+      "timeout_seconds": 1800,
+      "depends_on": [
+        {
+          "task_key": "ddl_schemas"
+        }
+      ]
+    },
+    {
+      "task_key": "semantic_ddl_v_measure",
+      "notebook_task": {
+        "notebook_path": "ddl/04_semantic/semantic_ddl_v_measure",
+        "source": "GIT"
+      },
+      "timeout_seconds": 1800,
+      "depends_on": [
+        {
+          "task_key": "gold_ddl_dim_ticker"
+        },
+        {
+          "task_key": "gold_ddl_fact_horizon_performance"
+        }
+      ]
+    },
+    {
+      "task_key": "semantic_ddl_v_beat_rate",
+      "notebook_task": {
+        "notebook_path": "ddl/04_semantic/semantic_ddl_v_beat_rate",
+        "source": "GIT"
+      },
+      "timeout_seconds": 1800,
+      "depends_on": [
+        {
+          "task_key": "gold_ddl_dim_ticker"
+        },
+        {
+          "task_key": "gold_ddl_fact_horizon_performance"
+        }
+      ]
+    },
+    {
+      "task_key": "semantic_ddl_v_beat_rate_by_cut",
+      "notebook_task": {
+        "notebook_path": "ddl/04_semantic/semantic_ddl_v_beat_rate_by_cut",
+        "source": "GIT"
+      },
+      "timeout_seconds": 1800,
+      "depends_on": [
+        {
+          "task_key": "gold_ddl_dim_ticker"
+        },
+        {
+          "task_key": "gold_ddl_fact_horizon_performance"
+        }
+      ]
+    },
+    {
+      "task_key": "semantic_ddl_v_leaderboard",
+      "notebook_task": {
+        "notebook_path": "ddl/04_semantic/semantic_ddl_v_leaderboard",
+        "source": "GIT"
+      },
+      "timeout_seconds": 1800,
+      "depends_on": [
+        {
+          "task_key": "gold_ddl_dim_ticker"
+        },
+        {
+          "task_key": "gold_ddl_fact_horizon_performance"
+        }
+      ]
+    },
+    {
+      "task_key": "semantic_ddl_v_measure_summary",
+      "notebook_task": {
+        "notebook_path": "ddl/04_semantic/semantic_ddl_v_measure_summary",
+        "source": "GIT"
+      },
+      "timeout_seconds": 1800,
+      "depends_on": [
+        {
+          "task_key": "semantic_ddl_v_measure"
+        }
+      ]
+    }
+  ]
+}

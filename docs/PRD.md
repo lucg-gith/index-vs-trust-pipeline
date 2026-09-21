@@ -1,7 +1,27 @@
 # PRD — Do UK investment trusts beat the S&P 500?
 
 **Last updated:** 2026-09-21
-**Current position:** **Steps 8 and 8b are complete and verified. The Workflow is live.** Job `218866821337014` now holds all 44 tasks on a monthly schedule, sourced from GitHub `main`, and the degraded-pull guard has been seen to fire and refuse rather than overwrite. Step 8b — one DDL task per object, 44 tasks,
+**Current position:** **Step 10, the restructure, is built and being verified.** The repository
+is now organised by *what a thing is* rather than which layer it sits in: `ddl/` holds the 23
+declarations, `etl/` holds the 15 loads, and `eda/`, `dashboard/` and `orchestration/` sit
+alongside them. **DDL has left the schedule** — it is deployment, run once from
+`orchestration/setup.json`, because re-running `CREATE TABLE IF NOT EXISTS` every month is work
+that can only ever do nothing. Job `218866821337014` keeps its id and run history, reset from 44
+tasks to **15 ETL tasks**, and its dependency edges drop from 96 to 17. Two semantic views that
+nothing read (`v_growth_of_100`, `v_universe`) and the superseded `trust_universe_seed.csv` are
+deleted. **No Silver or Gold notebook was edited**, so no published number may move — that is
+the acceptance test. Spec: `specs/07_restructure/restructure.md`.
+
+**Step 9, the presentation, is specced and awaiting approval** —
+`specs/06_presentation/presentation.md`. Five deliverables: README rewrite, five images, an
+editable 8-slide `.pptx` deck whose speaker notes double as the presenter guide, the recorded
+video, and a LinkedIn post — preceded by a **truth
+pass**, because the same fact currently carries three different values across README, PRD and
+PRESENTATION, and the warehouse settles each one before anything is recorded. A governing
+**plain-language pair rule** now applies to all five: keep the technical term, always gloss it
+in the same breath. The talk itself is already written in `personaldocs/PRESENTATION.md`; the
+video goes to `youtube.com/luciagarredata`.
+**Steps 8 and 8b are complete and verified. The Workflow is live.** Job `218866821337014` runs on a monthly schedule, sourced from GitHub `main`, and the degraded-pull guard has been seen to fire and refuse rather than overwrite. Step 8b — one DDL task per object, 44 tasks,
 and on 2026-09-21 **the pipeline ran green end to end for the first time**, Landing through
 Semantic, including a fresh Yahoo pull. Not one published number moved, which is what a move
 rather than a rewrite should do. Spec and its one deviation:
@@ -12,7 +32,7 @@ GitHub rather than the workspace. Revised 2026-09-20 to layer-first task names
 graph — each layer's DDL task is the gate into that layer. **Step 7 is complete:** the five semantic
 views and the dashboard are both built and verified. The dashboard is a Databricks AI/BI page
 created through the Lakeview REST API and published — one page, seven tiles, five datasets,
-its definition version-controlled at `04_semantic/dashboard/beat_rate.lvdash.json`. A Power BI
+its definition version-controlled at `dashboard/beat_rate.lvdash.json`. A Power BI
 build sheet in the same folder reproduces it by hand, because the Power BI REST API cannot
 author report visuals. **Gold is complete and
 the answer is in the warehouse:** only **5.3%** of
@@ -289,7 +309,7 @@ Specs live in `specs/<layer>/` and are gitignored — working notes, not deliver
 | 0 | **Design** — close the design tree | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 1 | **Landing** — 4 ingests plus schema | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 2 | **Bronze** — all-STRING recast | ✅ | ✅ | ✅ | ✅ | ✅ |
-| 3 | **EDA** — evidence for Silver's rules | ✅ | ✅ | ✅ | ✅ | ✅ |
+| 3 | **EDA** — the evidence behind every Silver rule | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 4 | **Silver** — scale repair, currency, total return | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 4b | **Silver revision** — repair the half-applied splits | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 5 | **Gold dims** — `dim_date`, `dim_ticker` SCD2 | ✅ | ✅ | ✅ | ✅ | ✅ |
@@ -298,7 +318,8 @@ Specs live in `specs/<layer>/` and are gitignored — working notes, not deliver
 | 7b | **Dashboard** — one page, seven tiles | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 8 | **Orchestration** — one monthly Workflow | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 8b | **One DDL task per object** — 21 tasks becomes 44 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| 9 | **Presentation** — README, video, LinkedIn | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| 9 | **Presentation** — README, images, video, PDF guide, LinkedIn | ✅ | 🔵 | ⬜ | ⬜ | ⬜ |
+| 10 | **Restructure** — `ddl/` and `etl/`, DDL off the schedule | ✅ | ✅ | ✅ | ✅ | 🔵 |
 
 ### Open at this moment
 
@@ -454,10 +475,29 @@ aloud rather than drawn. Full detail in `specs/04_semantic/dashboard.md`.
 One Databricks Workflow, chained tasks, monthly schedule. Not theatre: the SPY side
 genuinely gains a month per run. Tasks are named `<layer>_<ddl|etl>[_<object>]` and the
 notebooks are renamed to match, so a task box's title and its file path read the same. Each
-layer's DDL task gates the layer, so the board reads as five columns.
+layer's DDL task gates the layer, so the board reads as five columns. *Revised by step 10: the DDL tasks left this job, and the layer gates became per-source lanes.*
 
 **Step 9 — Presentation**
 README (architecture diagram, how to run, results), 5–10 minute video, LinkedIn post.
+
+**Step 10 — Restructure**
+The repository is organised by *what a thing is*, not by which layer it belongs to. `ddl/` holds
+the 23 declarations, `etl/` the 15 loads; `eda/`, `dashboard/` and `orchestration/` sit beside
+them. The five `<layer>_ddl` schema notebooks become one `ddl/ddl_schemas`.
+
+The change that matters is that **DDL left the schedule**. `CREATE TABLE` is deployment, not
+pipeline: it runs once, from `orchestration/setup.json`, which deliberately has no schedule.
+The monthly job is 15 ETL tasks — down from 44 — and its dependency edges drop from 96 to 17,
+because removing the DDL gate nodes let each source run as its own lane from Landing to Bronze
+before converging at Silver. That reverses the layer-gate decision of step 8 for a stated
+reason: with the gate nodes gone, layer gates would have meant 20 crossing edges where lanes
+give 5.
+
+Two semantic views nothing read (`v_growth_of_100`, `v_universe`) and the superseded
+`trust_universe_seed.csv` are deleted. **No Silver or Gold notebook was edited**, so the
+acceptance test is that nothing moves: 445 horizon rows, 15,604 monthly rows, and beat rates
+5.3 / 10.6 / 15.6 / 30.0 / 41.6. Spec: `specs/07_restructure/restructure.md`.
+
 
 ---
 
