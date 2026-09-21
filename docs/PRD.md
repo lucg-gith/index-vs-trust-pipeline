@@ -1,7 +1,10 @@
 # PRD — Do UK investment trusts beat the S&P 500?
 
 **Last updated:** 2026-09-21
-**Current position:** Step 8 of 9 — orchestration. The spec is written and awaiting approval:
+**Current position:** **Step 4b, the split repair, is built and awaiting a pipeline run** —
+`silver_etl_monthly_performance` now rescues 88 months Yahoo left on the pre-split scale, and
+every published beat rate has to be re-measured once it runs. Step 8 of 9 — orchestration —
+is specced and awaiting approval:
 `specs/05_orchestration/workflow.md`, one job of 21 tasks on a monthly schedule, sourced from
 GitHub rather than the workspace. Revised 2026-09-20 to layer-first task names
 (`bronze_ddl`, `gold_etl_dim_ticker`) with the notebooks renamed to match, and to a layer-gate
@@ -287,7 +290,7 @@ Specs live in `specs/<layer>/` and are gitignored — working notes, not deliver
 | 2 | **Bronze** — all-STRING recast | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 3 | **EDA** — evidence for Silver's rules | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 4 | **Silver** — scale repair, currency, total return | ✅ | ✅ | ✅ | ✅ | ✅ |
-| 4b | **Silver revision** — repair the half-applied splits | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| 4b | **Silver revision** — repair the half-applied splits | ✅ | ✅ | ✅ | ✅ | ⬜ |
 | 5 | **Gold dims** — `dim_date`, `dim_ticker` SCD2 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 6 | **Gold facts** — monthly plus horizon, return + risk | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 7a | **Semantic** — five thin views over Gold | ✅ | ✅ | ✅ | ✅ | ✅ |
@@ -410,7 +413,7 @@ status derived, MERGE on the business key.
 
 S3 is a change to a previously agreed design point — see `dim_date` above.
 
-**Step 4b — Silver revision: the half-applied splits** *(specced, measured, not yet agreed)*
+**Step 4b — Silver revision: the half-applied splits** *(agreed and built 2026-09-21; awaiting a pipeline run)*
 Yahoo left four quarter-end months — 2011-12, 2012-03, 2012-06, 2012-09 — on the pre-split
 scale for 22 trusts, so Silver correctly refuses to repair the bar and deletes the month,
 costing 8 monthly returns each. One extra repair candidate, `close / F` where `F` is the
@@ -419,7 +422,7 @@ rows**. Simulated read-only against Bronze on 2026-09-21: `fact_monthly_performa
 **15,516 → 15,604**, the study stays at **96** tickers and `fact_horizon_performance` at
 **445**, and the CSV archive — an independent provider corrupted in *different* months —
 agrees with **87 of the 88** repaired prices and with **none** of the originals. Spec in
-`specs/02_silver/split-repair.md`, tracked as issue #14. Approving it means re-measuring
+`specs/02_silver/split-repair.md`, tracked as issue #14. Verifying it means re-measuring
 every published figure.
 
 **Step 5 — Gold dimensions** *(next)*
