@@ -318,52 +318,76 @@
 
     <figure>
       <div class="fig-scroll">
-        <svg class="diagram" viewBox="0 0 1000 390" role="img" aria-label="Timeline showing one ticker with two dim_ticker versions split at a manager change in March 2024; each monthly fact row carries the ticker_key of the version that was live in its own month.">
+        <svg class="diagram" viewBox="0 0 1000 440" role="img" aria-label="Two dim_ticker rows for one ticker after a manager change: the old version closed at 202608 and a new one opened at 202609, with three fact_monthly_performance rows each pointing at the version that was current in its own month.">
           <defs>
             <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
               <path d="M0,0 L10,5 L0,10 z" fill="currentColor"></path>
             </marker>
           </defs>
 
-          <text class="b-tag" x="80" y="34">TWO ROWS IN dim_ticker FOR ONE TICKER</text>
+          <text class="b-tag" x="40" y="26">dim_ticker &mdash; ONE TICKER, ONCE A MANAGER CHANGE HAS BEEN DETECTED</text>
 
-          <rect class="bar-d" x="80" y="56" width="440" height="66" rx="5"></rect>
-          <text class="row" x="98" y="84" style="fill:var(--dim); font-weight:600">MD5(TRST.L|201108)</text>
-          <text class="row-note" x="98" y="108">version 1 &middot; is_current = false</text>
+          <rect class="b-body" x="40" y="40" width="720" height="130" rx="8"></rect>
+          <path class="b-head-d" d="M40,48 a8,8 0 0 1 8,-8 h704 a8,8 0 0 1 8,8 v30 h-720 z"></path>
+          <text class="lab" x="56" y="66">ticker_key</text>
+          <text class="lab" x="150" y="66">ticker</text>
+          <text class="lab" x="215" y="66">manager</text>
+          <text class="lab" x="440" y="66">eff_start</text>
+          <text class="lab" x="530" y="66">eff_end</text>
+          <text class="lab" x="620" y="66">is_current</text>
 
-          <rect class="bar-d" x="530" y="56" width="390" height="66" rx="5"></rect>
-          <text class="row" x="548" y="84" style="fill:var(--dim); font-weight:600">MD5(TRST.L|202403)</text>
-          <text class="row-note" x="548" y="108">version 2 &middot; is_current = true</text>
+          <line class="axis" x1="40" y1="124" x2="760" y2="124"></line>
 
-          <line class="conn-dash" x1="525" y1="46" x2="525" y2="300"></line>
-          <rect class="lab-bg" x="418" y="140" width="216" height="18" rx="3"></rect>
-          <text class="lab" x="526" y="153" text-anchor="middle">manager changes &#8594; 2024-03</text>
+          <text class="row" x="56" y="106">a1b2c3d4</text>
+          <text class="row" x="150" y="106">TRST.L</text>
+          <text class="row" x="215" y="106">Manager A</text>
+          <text class="row" x="440" y="106">201108</text>
+          <text class="row" x="530" y="106">202608</text>
+          <text class="row" x="620" y="106">false</text>
 
-          <line class="axis" x1="80" y1="186" x2="920" y2="186"></line>
-          <line class="axis" x1="80" y1="181" x2="80" y2="191"></line>
-          <line class="axis" x1="920" y1="181" x2="920" y2="191"></line>
-          <text class="lab" x="80" y="208" text-anchor="start">2011-08</text>
-          <text class="lab" x="920" y="208" text-anchor="end">2026-08</text>
+          <text class="row" x="56" y="152">e5f6a7b8</text>
+          <text class="row" x="150" y="152">TRST.L</text>
+          <text class="row" x="215" y="152">Manager B</text>
+          <text class="row" x="440" y="152">202609</text>
+          <text class="row" x="530" y="152">null</text>
+          <text class="row" x="620" y="152" style="fill:var(--dim); font-weight:600">true</text>
 
-          <line class="conn" x1="200" y1="250" x2="200" y2="128" marker-end="url(#ar2)"></line>
-          <line class="conn" x1="430" y1="250" x2="430" y2="128" marker-end="url(#ar2)"></line>
-          <line class="conn" x1="700" y1="250" x2="700" y2="128" marker-end="url(#ar2)"></line>
+          <text class="b-tag" x="40" y="226">fact_monthly_performance &mdash; THREE OF ITS ROWS</text>
 
-          <rect class="chip" x="152" y="250" width="96" height="28" rx="4"></rect>
-          <text class="row" x="200" y="269" text-anchor="middle">2019-04</text>
-          <rect class="chip" x="382" y="250" width="96" height="28" rx="4"></rect>
-          <text class="row" x="430" y="269" text-anchor="middle">2024-01</text>
-          <rect class="chip" x="652" y="250" width="96" height="28" rx="4"></rect>
-          <text class="row" x="700" y="269" text-anchor="middle">2025-06</text>
+          <rect class="b-body" x="40" y="240" width="480" height="150" rx="8"></rect>
+          <path class="b-head-f" d="M40,248 a8,8 0 0 1 8,-8 h464 a8,8 0 0 1 8,8 v30 h-480 z"></path>
+          <text class="lab" x="56" y="266">month_key</text>
+          <text class="lab" x="200" y="266">ticker_key</text>
 
-          <text class="b-tag" x="80" y="308">ROWS IN fact_monthly_performance</text>
-          <text class="row-note" x="80" y="340">Every monthly row carries the ticker_key of the version live in its own month, resolved once at build time.</text>
-          <text class="row-note" x="80" y="362">fact_horizon_performance carries the current version instead, because it is an as-of-today summary.</text>
+          <line class="axis" x1="40" y1="315" x2="520" y2="315"></line>
+          <line class="axis" x1="40" y1="352" x2="520" y2="352"></line>
+
+          <text class="row" x="56" y="302">202512</text>
+          <text class="row" x="200" y="302">a1b2c3d4</text>
+          <text class="row" x="56" y="339">202608</text>
+          <text class="row" x="200" y="339">a1b2c3d4</text>
+          <text class="row" x="56" y="376">202609</text>
+          <text class="row" x="200" y="376">e5f6a7b8</text>
+
+          <line class="conn" x1="530" y1="298" x2="748" y2="104" marker-end="url(#ar2)"></line>
+          <line class="conn" x1="530" y1="335" x2="748" y2="112" marker-end="url(#ar2)"></line>
+          <line class="conn" x1="530" y1="372" x2="748" y2="152" marker-end="url(#ar2)"></line>
+
+          <text class="row-note" x="792" y="286">each fact row carries</text>
+          <text class="row-note" x="792" y="306">the version that was</text>
+          <text class="row-note" x="792" y="326">current in its own</text>
+          <text class="row-note" x="792" y="346">month &mdash; resolved</text>
+          <text class="row-note" x="792" y="366">once, at build time</text>
+
+          <text class="row-note" x="40" y="420">The old version closes in the last month observed; the new one opens the month after. No fact row can map to two versions.</text>
         </svg>
       </div>
-      <figcaption>The manager file is a snapshot with no dates, so on a first run every ticker is
-        version 1 and all 121 rows are current. The versioning is proven rather than assumed: change
-        one manager, re-run, and that ticker has two rows with only the later one current.</figcaption>
+      <figcaption>The split lands at <em>detection</em> time, not at the real handover date &mdash; the
+        manager file is a snapshot carrying no dates, so on a first run every ticker is version 1 and
+        all 121 rows are current. That is a stated limit of the source, not of the model: the
+        mechanism is proven by changing one manager and re-running, after which that ticker has two
+        rows and only the later one is current. <code>fact_horizon_performance</code> always carries
+        the current version instead, because it is an as-of-today summary.</figcaption>
     </figure>
   </section>
 
