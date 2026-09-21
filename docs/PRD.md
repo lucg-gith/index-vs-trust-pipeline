@@ -10,6 +10,8 @@ Data Modeling, Analytical Dashboard, Data Sources, Repository Structure, How to 
 claims were corrected — 18 Yahoo deletions not 16, five horizons not four, and 96 usable tickers
 (90 active trusts, 3 delisted, 3 index) rather than the old 100/6 split.
 
+**Step 11, listed trusts only — Silver, Gold and Semantic are built, not yet verified (2026-09-21).** The universe is now the trusts that are still listed; the with-and-without-delisted comparison is being removed everywhere. The cut is made in **Silver**, so nothing below it has to filter again. Spec: `specs/08_listed_only/listed-only.md`, which supersedes `specs/03_gold/exclude-delisted.md`. Silver drops from 15,604 rows / 96 tickers to **15,333 / 93**, and `silver.ticker` from 121 rows to **102** — 99 listed trusts plus 3 index. Both figures were dry-run against the warehouse before the code was written. Gold follows: `dim_ticker` 121 → **102**, `fact_monthly_performance` 15,604 → **15,333**, `fact_horizon_performance` 445 → **440**. Five MERGEs gained a `WHEN NOT MATCHED BY SOURCE THEN DELETE` arm, without which the delisted rows already in those tables would simply have stayed. `status` is no longer an SCD2 driver — the dimension holds only listed trusts, so it cannot change within the table. Semantic follows the same cut: `v_beat_rate` collapses from 10 rows to **5**, one per horizon, and `status` is dropped from `v_measure` and `v_leaderboard` as a now-constant column. Re-run against live data, the rewritten `v_beat_rate` reproduces the old `all trusts` cohort exactly at all five horizons, so the change is one of shape, not arithmetic. **The dashboard and the documents are still to do, and nothing has run yet: the warehouse still holds the old numbers.**
+
 **Current position:** **Step 6b is complete and verified.** The horizon fact is now derived from `gold.fact_monthly_performance` rather than built from Silver in parallel with it, so the two facts cannot drift and the Workflow DAG shows the aggregate hanging off the atomic fact. Every number must reproduce unchanged. **Step 10, the restructure, is complete and verified.** The repository
 is now organised by *what a thing is* rather than which layer it sits in: `ddl/` holds the 23
 declarations, `etl/` holds the 15 loads, and `eda/`, `dashboard/` and `orchestration/` sit
@@ -330,7 +332,7 @@ Specs live in `specs/<layer>/` and are gitignored — working notes, not deliver
 | 8b | **One DDL task per object** — 21 tasks becomes 44 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 9 | **Presentation** — README, images, deck, video, LinkedIn | ✅ | ✅ | ✅ | 🔵 | ⬜ |
 | 10 | **Restructure** — `ddl/` and `etl/`, DDL off the schedule | ✅ | ✅ | ✅ | ✅ | ✅ |
-| 11 | **Exclude delisted** — Gold, views, dashboard | ✅ | 🔵 | ⬜ | ⬜ | ⬜ |
+| 11 | **Listed trusts only** — cut at Silver, survivorship removed | ✅ | ✅ | ✅ | 🔵 | ⬜ |
 
 ### Open at this moment
 
