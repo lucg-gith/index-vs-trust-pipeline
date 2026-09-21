@@ -1,6 +1,6 @@
 # PRD — Do UK investment trusts beat the S&P 500?
 
-**Last updated:** 2026-09-20
+**Last updated:** 2026-09-21
 **Current position:** Step 8 of 9 — orchestration. The spec is written and awaiting approval:
 `specs/05_orchestration/workflow.md`, one job of 21 tasks on a monthly schedule, sourced from
 GitHub rather than the workspace. Revised 2026-09-20 to layer-first task names
@@ -409,6 +409,18 @@ never converted (a return is unit-free), stubs kept for Gold to filter, null man
 status derived, MERGE on the business key.
 
 S3 is a change to a previously agreed design point — see `dim_date` above.
+
+**Step 4b — Silver revision: the half-applied splits** *(specced, measured, not yet agreed)*
+Yahoo left four quarter-end months — 2011-12, 2012-03, 2012-06, 2012-09 — on the pre-split
+scale for 22 trusts, so Silver correctly refuses to repair the bar and deletes the month,
+costing 8 monthly returns each. One extra repair candidate, `close / F` where `F` is the
+product of the splits Yahoo itself reports after that month, rescues **88 of the 94 deleted
+rows**. Simulated read-only against Bronze on 2026-09-21: `fact_monthly_performance` goes
+**15,516 → 15,604**, the study stays at **96** tickers and `fact_horizon_performance` at
+**445**, and the CSV archive — an independent provider corrupted in *different* months —
+agrees with **87 of the 88** repaired prices and with **none** of the originals. Spec in
+`specs/02_silver/split-repair.md`, tracked as issue #14. Approving it means re-measuring
+every published figure.
 
 **Step 5 — Gold dimensions** *(next)*
 `dim_date` (~181 rows, 2011-08 onward) and `dim_ticker` with the SCD2 MERGE closing and
