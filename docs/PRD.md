@@ -1,7 +1,7 @@
 # PRD — Do UK investment trusts beat the S&P 500?
 
 **Last updated:** 2026-09-21
-**Current position:** **Step 10, the restructure, is built and being verified.** The repository
+**Current position:** **Step 10, the restructure, is complete and verified.** The repository
 is now organised by *what a thing is* rather than which layer it sits in: `ddl/` holds the 23
 declarations, `etl/` holds the 15 loads, and `eda/`, `dashboard/` and `orchestration/` sit
 alongside them. **DDL has left the schedule** — it is deployment, run once from
@@ -10,7 +10,7 @@ that can only ever do nothing. Job `218866821337014` keeps its id and run histor
 tasks to **15 ETL tasks**, and its dependency edges drop from 96 to 17. Two semantic views that
 nothing read (`v_growth_of_100`, `v_universe`) and the superseded `trust_universe_seed.csv` are
 deleted. **No Silver or Gold notebook was edited**, so no published number may move — that is
-the acceptance test. Spec: `specs/07_restructure/restructure.md`.
+the acceptance test, and it passed: both jobs ran green (23 of 23, then 15 of 15 twice) and every figure came back identical. Spec: `specs/07_restructure/restructure.md`.
 
 **Step 9, the presentation, is specced and awaiting approval** —
 `specs/06_presentation/presentation.md`. Five deliverables: README rewrite, five images, an
@@ -319,7 +319,7 @@ Specs live in `specs/<layer>/` and are gitignored — working notes, not deliver
 | 8 | **Orchestration** — one monthly Workflow | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 8b | **One DDL task per object** — 21 tasks becomes 44 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 9 | **Presentation** — README, images, video, PDF guide, LinkedIn | ✅ | 🔵 | ⬜ | ⬜ | ⬜ |
-| 10 | **Restructure** — `ddl/` and `etl/`, DDL off the schedule | ✅ | ✅ | ✅ | ✅ | 🔵 |
+| 10 | **Restructure** — `ddl/` and `etl/`, DDL off the schedule | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ### Open at this moment
 
