@@ -10,7 +10,7 @@ Data Modeling, Analytical Dashboard, Data Sources, Repository Structure, How to 
 claims were corrected — 18 Yahoo deletions not 16, five horizons not four, and 96 usable tickers
 (90 active trusts, 3 delisted, 3 index) rather than the old 100/6 split.
 
-**Current position:** **Step 10, the restructure, is complete and verified.** The repository
+**Current position:** **Step 6b is built and awaiting its verification run.** The horizon fact is now derived from `gold.fact_monthly_performance` rather than built from Silver in parallel with it, so the two facts cannot drift and the Workflow DAG shows the aggregate hanging off the atomic fact. Every number must reproduce unchanged. **Step 10, the restructure, is complete and verified.** The repository
 is now organised by *what a thing is* rather than which layer it sits in: `ddl/` holds the 23
 declarations, `etl/` holds the 15 loads, and `eda/`, `dashboard/` and `orchestration/` sit
 alongside them. **DDL has left the schedule** — it is deployment, run once from
@@ -323,6 +323,7 @@ Specs live in `specs/<layer>/` and are gitignored — working notes, not deliver
 | 4b | **Silver revision** — repair the half-applied splits | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 5 | **Gold dims** — `dim_date`, `dim_ticker` SCD2 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 6 | **Gold facts** — monthly plus horizon, return + risk | ✅ | ✅ | ✅ | ✅ | ✅ |
+| 6b | **Horizon from the monthly fact** — one lineage, not two | ✅ | ✅ | ✅ | ✅ | ⬜ |
 | 7a | **Semantic** — five thin views over Gold | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 7b | **Dashboard** — one page, seven tiles | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 8 | **Orchestration** — one monthly Workflow | ✅ | ✅ | ✅ | ✅ | ✅ |
@@ -466,6 +467,16 @@ opening version rows.
 `fact_monthly_performance`, then `fact_horizon_performance` at **five horizons** with the
 36-month minimum, delisted trusts judged over their own lifespan against the index over that
 same span, and **volatility plus risk-adjusted return** aggregated over each window.
+
+
+**Step 6b — the horizon fact reads the monthly fact** *(2026-09-21)*
+`fact_horizon_performance` was built from `silver.monthly_performance`, which left
+`fact_monthly_performance` with nothing reading it and let two tables built off the same
+source drift apart. The horizon build now reads the atomic fact, so the lineage is Silver →
+atomic fact → aggregate fact, and `dim_date` supplies the `ADD_MONTHS` window arithmetic it
+was always commented for. One dependency added to the job graph. No DDL, no column changed,
+and every published figure must come back identical — the change buys lineage, and lineage is
+not worth a changed answer.
 
 **Step 7 — Semantic and dashboard** *(done)*
 Five thin views over Gold, then one AI/BI dashboard page over two of them. Dashboard scope was

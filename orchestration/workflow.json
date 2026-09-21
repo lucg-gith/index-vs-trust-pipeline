@@ -213,6 +213,9 @@
         },
         {
           "task_key": "gold_etl_dim_ticker"
+        },
+        {
+          "task_key": "gold_etl_fact_monthly_performance"
         }
       ]
     }
