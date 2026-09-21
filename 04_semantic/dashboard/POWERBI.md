@@ -106,7 +106,7 @@ The one above and to the left — higher return at lower risk than the index —
 ## 5. Check it matches
 
 Set the slicer to 15 years and confirm: **5.3**, **0.0**, **24.2 vs 14.2**, bars reading
-5.3 / 10.6 / 15.6 / 30.0 / 41.6, and ATT top of the table at 24.91% with 30.1% volatility.
+5.3 / 10.6 / 15.6 / 30.0 / 41.6, and ATT top of the table at 22.9% with 29.6% volatility.
 
 If any of those disagree with the AI/BI dashboard, the cause is almost always a missing
 `cohort = "all trusts"` filter or a scatter without `ticker` in Details.

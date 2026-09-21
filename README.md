@@ -82,7 +82,7 @@ several points a year and understate the beat rate.
 UK trusts Yahoo records the dividend events and never applies them — 97 of 100 trusts show
 an adjustment of under 0.5%. `HFEL` is the clearest case: 40 dividends totalling 232.6p
 against a 359p starting price, yet an `Adj_Close` adjustment of 0.8%. Over ten years its
-price return is **−25.8%** and its total return is **+39.0%**. Silver therefore builds
+price return is **−22.9%** and its total return is **+74.7%**. Silver therefore builds
 total return from `Close` and `Dividends` rather than trusting the adjusted column.
 
 ### Other things stated openly

@@ -1,10 +1,7 @@
 # PRD — Do UK investment trusts beat the S&P 500?
 
 **Last updated:** 2026-09-21
-**Current position:** **Step 4b, the split repair, is built and awaiting a pipeline run** —
-`silver_etl_monthly_performance` now rescues 88 months Yahoo left on the pre-split scale, and
-every published beat rate has to be re-measured once it runs. Step 8 of 9 — orchestration —
-is specced and awaiting approval:
+**Current position:** **Step 8 of 9 — orchestration**, specced and awaiting approval:
 `specs/05_orchestration/workflow.md`, one job of 21 tasks on a monthly schedule, sourced from
 GitHub rather than the workspace. Revised 2026-09-20 to layer-first task names
 (`bronze_ddl`, `gold_etl_dim_ticker`) with the notebooks renamed to match, and to a layer-gate
@@ -20,8 +17,8 @@ over 15 or 10 years while also being less volatile. `gold.fact_horizon_performan
 income, volatility, risk-adjusted return and three stored ranks. Growth — `price_return`,
 dividends excluded — was added 2026-09-20 so the dashboard can show return and growth side by
 side; the re-merge updated all 445 rows and inserted none. `gold.fact_monthly_performance`
-holds 15,516 rows with zero orphan keys against either dimension. **Silver is verified** on Databricks as
-of 2026-09-20: three notebooks ran green on the first attempt, 16,770 rows across 104
+holds 15,604 rows with zero orphan keys against either dimension. **Silver is verified** on Databricks as
+of 2026-09-20: three notebooks ran green on the first attempt, 15,604 rows across 96
 tickers, and every expected number matched bar one (see below). Landing, Bronze and EDA are
 all verified too.
 
@@ -287,7 +284,7 @@ Specs live in `specs/<layer>/` and are gitignored — working notes, not deliver
 |---|---|:--:|:--:|:--:|:--:|:--:|
 | 0 | **Design** — close the design tree | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 1 | **Landing** — 4 ingests plus schema | ✅ | ✅ | ✅ | ✅ | ✅ |
-| 2 | **Bronze** — all-STRING recast | ✅ | ✅ | ✅ | ✅ | ✅ |
+| 4b | **Silver revision** — repair the half-applied splits | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 3 | **EDA** — evidence for Silver's rules | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 4 | **Silver** — scale repair, currency, total return | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 4b | **Silver revision** — repair the half-applied splits | ✅ | ✅ | ✅ | ✅ | ⬜ |
@@ -310,7 +307,7 @@ Specs live in `specs/<layer>/` and are gitignored — working notes, not deliver
   2011-08 onward**, because nothing older is read by any metric and the pre-2011 data is
   12.4% corrupt against 0.67% inside the window — this shrinks `dim_date` from ~710 rows to
   ~181 and is a change to a previously agreed design point.
-- **Silver is verified.** `silver.monthly_performance` holds **15,516 rows across 96
+- **Silver is verified.** `silver.monthly_performance` holds **15,604 rows across 96
   tickers**, `silver.ticker` holds **121**, and `silver.price_repair_log` holds **346** —
   252 repaired, 94 deleted. Both integrity checks return **0**: no non-positive close, and
   nothing left more than 2x from its neighbourhood median. `PCFT` 2019-11 came back as
@@ -332,8 +329,8 @@ Specs live in `specs/<layer>/` and are gitignored — working notes, not deliver
   15-year annualised volatility is **14.3%**, the textbook figure for the S&P 500.
 - **A documentation error was found and corrected:** HFEL's old "+39.0% total return" did not
   reinvest dividends while the SPY "+312%" it was paired with did. The pipeline compounds
-  both sides identically and gives HFEL **+78.9%**.
-- **The job was submitted twice and returned identical counts** — 16,770 / 121 / 490 — with row counts equal to distinct business keys in every table. That is the MERGE doing its job, and the answer to "how do you guarantee no duplicates?"
+  both sides identically and gives HFEL **+74.7%**.
+- **The job was submitted twice and returned identical counts** — now **15,604 / 121 / 346** — with row counts equal to distinct business keys in every table. Delta history proves it directly: run 1 of the split repair reported **88 inserted, 15,516 updated**, and run 2 reported **0 inserted, 15,604 updated, 0 deleted** in both Silver and Gold, with `fact_horizon_performance` at **0 inserted, 445 updated** both times. That is the MERGE doing its job, and the answer to "how do you guarantee no duplicates?"
 - **One prediction was wrong and the data was right:** distinct `management_group` is **53**,
   not 52, because 19 trusts carry an empty string rather than a null. The 52 real groups are
   intact. Whether to normalise `''` to null is **open for Gold**, where the column is used.
@@ -392,13 +389,13 @@ repair that the Landing spec had retired.
 
 **Step 4 — Silver** *(spec approved and built 2026-09-20; three notebooks, verifying)*
 Eleven rules (S1–S11), each citing the EDA finding it answers. Three tables: `silver.ticker`
-(121 rows), `silver.monthly_performance` (16,770 rows) and `silver.price_repair_log` (490
+(121 rows), `silver.monthly_performance` (15,604 rows) and `silver.price_repair_log` (346
 rows, the audit trail for every value changed or removed).
 
 The hard rule is **S2, scale repair**: detect a close that is zero or more than 2x from the
 median of its 13-month neighbourhood, repair it to that bar's own `(High + Low) / 2`, re-test
-the repair, and delete the month if it still fails. **381 repaired, 109 deleted** out of
-16,770 — 0.65%. It is verified out-of-sample against the next month's opening price (2.17%
+the repair, and delete the month if it still fails. **252 repaired, 88 split-repaired, 6 deleted** out of
+15,604 — 2.2%. It is verified out-of-sample against the next month's opening price (2.17%
 error repaired, against 447% uncorrected and 0.47% for a clean row), and proved to be
 catching data defects rather than volatility by firing **zero** times in March 2020 while
 firing 24 times in each of two calm months. It also subsumes the `PCFT` zero with no special
@@ -413,7 +410,7 @@ status derived, MERGE on the business key.
 
 S3 is a change to a previously agreed design point — see `dim_date` above.
 
-**Step 4b — Silver revision: the half-applied splits** *(agreed and built 2026-09-21; awaiting a pipeline run)*
+**Step 4b — Silver revision: the half-applied splits** *(complete and verified 2026-09-21)*
 Yahoo left four quarter-end months — 2011-12, 2012-03, 2012-06, 2012-09 — on the pre-split
 scale for 22 trusts, so Silver correctly refuses to repair the bar and deletes the month,
 costing 8 monthly returns each. One extra repair candidate, `close / F` where `F` is the
@@ -422,7 +419,7 @@ rows**. Simulated read-only against Bronze on 2026-09-21: `fact_monthly_performa
 **15,516 → 15,604**, the study stays at **96** tickers and `fact_horizon_performance` at
 **445**, and the CSV archive — an independent provider corrupted in *different* months —
 agrees with **87 of the 88** repaired prices and with **none** of the originals. Spec in
-`specs/02_silver/split-repair.md`, tracked as issue #14. Verifying it means re-measuring
+`specs/02_silver/split-repair.md`, closed as issue #14. **Run 2026-09-21, all seven tasks green.** The beat rates did not move at all — 5.3 / 10.6 / 15.6 / 30.0 / 41.6 — because eight restored months changed returns without flipping a verdict. What moved: ATT from 24.9% a year to 22.9%, out-yielding from 40 of 76 to 41, and 15-year median volatility 24.2% to 24.0%. Re-measured in
 every published figure.
 
 **Step 5 — Gold dimensions** *(next)*
@@ -440,7 +437,7 @@ cut from four pages to seven tiles on 2026-09-20: three counters (return, growth
 beat rate by horizon, beat rate by management group, the survivorship pair, and a top-20 table
 naming the managers with the index ranked into it.
 Three counters, one per question: over 15 years 5.3% beat the index on total return, 5.3%
-out-grew it on price alone, and 52.6% paid more income than it. At 5 years the first two split
+out-grew it on price alone, and 53.9% paid more income than it. At 5 years the first two split
 — 15.6% against 8.9% — which is the dividends doing the work. **Volatility was removed from the
 dashboard on 2026-09-20** after three attempts at charting it; it stays computed in Gold, so
 the honest line is "I measured it and kept the page focused", not "I did not look at risk".
@@ -465,7 +462,7 @@ README (architecture diagram, how to run, results), 5–10 minute video, LinkedI
 |---|---|
 | **yfinance is now a single point of failure.** It is an unofficial scraper and both sides of the comparison depend on it | The biggest risk in the project since 2026-09-19. Landing OVERWRITEs per run, so a bad pull replaces a good one. Mitigation: the pull log makes a degraded run obvious at a glance, and the verification cells assert exact symbol counts rather than "it ran" |
 | **The scale repair is the hardest piece.** 36 of 96 trusts carry mis-scaled rows inside the window, 743 in total, and the factor differs by ticker — CGT a clean 10x, CLDN roughly 1400x | Detect per row against the median of neighbouring months, derive the ratio, rescale. Step 3 must prove the detection works before step 4 relies on it. Excluding the affected trusts instead would discard 37% of the sample |
-| **The total-return calculation is the number everything rests on** | One formula, applied identically to trusts and SPY so any error cancels on both sides. Verified against Silver 2026-09-20: HFEL over 10 years, price return **−22.9%** against total return **+78.9%**, on **237.7p** of dividends. *The older +39.0% figure did not reinvest the dividends while the SPY figure it was paired with did — an apples-to-oranges the pipeline does not repeat.* |
+| **The total-return calculation is the number everything rests on** | One formula, applied identically to trusts and SPY so any error cancels on both sides. Re-measured from `gold.fact_horizon_performance` 2026-09-21: HFEL over 10 years, price return **−22.9%** against total return **+74.7%**. *The older +39.0% figure did not reinvest the dividends while the SPY figure it was paired with did — an apples-to-oranges the pipeline does not repeat.* |
 | **Survivorship rests on 2 trusts** | Reframed: the claim is the mechanism, evidenced by Yahoo's 16 deletions, not a precise effect size. Stated as a limitation in the README rather than buried |
 | **SCD2 has no history on run 1** — the source is a snapshot | Expected and explained. Demo it live by changing a manager and re-running |
 | Time runs out before step 9 | Steps 1–6 clear "Ideal" on their own. Dashboard and video are bonus — cut from the end, not the middle |
