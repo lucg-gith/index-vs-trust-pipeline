@@ -1,8 +1,18 @@
 # PRD — Do UK investment trusts beat the S&P 500?
 
-**Last updated:** 2026-09-22
+**Last updated:** 2026-09-23
 
-**Current position:** **Step 13 — manager dimensions and a single fact — is complete, run
+**Current position:** **Step 14 — the atomic fact returns — is specced and awaiting
+agreement (2026-09-23).** The professor's feedback on the dimensional model asks for two
+changes: the fact must sit at the atomic grain, and the bridge must leave the star with
+`dim_manager` joining the fact directly. `gold.fact_monthly_performance` takes grain
+(ticker, month, manager) at **36,724 rows**, the horizon maths moves to
+`semantic.v_horizon_performance`, and the model becomes a pure star. A fifth dimension,
+`dim_mandate`, splits `aic_sector` into region, asset class and style so the model answers
+*dónde*. Nothing is built; step
+13 remains the running pipeline. Spec: `specs/11_monthly_fact/monthly-fact.md`.
+
+**Step 13 — manager dimensions and a single fact — is complete, run
 and verified (2026-09-22).** Both jobs green from commit `65cae77`: setup 25 of 25 tasks,
 pipeline 17 of 17, run twice with every count identical.
 
@@ -410,6 +420,7 @@ Specs live in `specs/<layer>/` and are gitignored — working notes, not deliver
 | 11 | **Listed trusts only** — cut at Silver, survivorship removed | ✅ | ✅ | ✅ | ✅ | 🔵 |
 | 12 | **Consistency audit** — make the documents match the pipeline | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | 13 | **Manager dimensions, one fact** — `dim_manager` + bridge, monthly fact retired | ✅ | ✅ | ✅ | ✅ | ✅ |
+| 14 | **Atomic fact, pure star** — `fact_monthly_performance` at (ticker, month, manager), bridge off the star, `dim_mandate` added | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 
 ### Open at this moment
 
