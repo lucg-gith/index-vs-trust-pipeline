@@ -2,8 +2,9 @@
 
 **Last updated:** 2026-09-22
 
-**Current position:** **Step 13 — manager dimensions and a single fact — is specced,
-agreed and built; it has not yet run (2026-09-22).**
+**Current position:** **Step 13 — manager dimensions and a single fact — is complete, run
+and verified (2026-09-22).** Both jobs green from commit `65cae77`: setup 25 of 25 tasks,
+pipeline 17 of 17, run twice with every count identical.
 
 Manager and management group become dimensions. `dim_manager` sits at individual grain and
 is reached through `bridge_ticker_manager`, because the relationship is many-to-many in both
@@ -15,11 +16,27 @@ directly.
 
 Both changes reverse decisions that are on the record — step 6b moved the horizon fact the
 other way, and `dim_manager` had been rejected — so the spec says so plainly rather than
-quietly. **Neither is allowed to move a published number.** Measured read-only before the
-code was committed: all 440 keys match, every exactly-comparable column is identical on
-every row, and the largest difference across all nine DOUBLE columns is **5.55e-17**, one
-unit in the last place. Spec: `specs/10_manager_dimensions/manager-dimensions.md`; issues
-#16–#21.
+quietly. Spec: `specs/10_manager_dimensions/manager-dimensions.md`; issues #16–#21.
+
+**Neither was allowed to move a published number, and neither did.** The proof needs stating
+carefully, because the naive comparison is dirty. Comparing the rebuilt fact against a
+snapshot taken before the run shows 55 DOUBLE values differing by up to **0.0016** — far too
+large to be rounding. That drift is **not the refactor**: the monthly job re-ingests from
+Yahoo, and this pull brought revised dividends for three tickers — `NBPE` (13 months), `PSH`
+(18), `VOF` (1) — taking Silver's dividend total from 10,903.71 to 10,904.90.
+
+The clean test runs the **new** logic against the **frozen** pre-run snapshot still sitting
+in `gold.fact_monthly_performance`, which no longer refreshes: **440 keys matched, 0
+exactly-comparable columns differing, 0 doubles beyond 1e-12, largest difference 5.55e-17**
+— one unit in the last place. The code is equivalent; the data moved underneath it, which is
+the pipeline doing its job.
+
+*Lesson worth keeping: "merging is the deploy" is only half true.* Merging deploys the
+notebooks, because `git_source` fetches them at run time. It does **not** deploy the job's
+task list, which lives on the job object. The first setup run failed on
+`gold_ddl_fact_monthly_performance` — a notebook this step deleted, still named by the stale
+23-task definition. Fixed by posting `orchestration/*.json` through `jobs/reset`, replacing
+only the `tasks` array so the schedule, run history and generated settings survived.
 
 ### The pipeline as it stands
 
@@ -392,7 +409,7 @@ Specs live in `specs/<layer>/` and are gitignored — working notes, not deliver
 | 10 | **Restructure** — `ddl/` and `etl/`, DDL off the schedule | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 11 | **Listed trusts only** — cut at Silver, survivorship removed | ✅ | ✅ | ✅ | ✅ | 🔵 |
 | 12 | **Consistency audit** — make the documents match the pipeline | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
-| 13 | **Manager dimensions, one fact** — `dim_manager` + bridge, monthly fact retired | ✅ | ✅ | ✅ | ✅ | ⬜ |
+| 13 | **Manager dimensions, one fact** — `dim_manager` + bridge, monthly fact retired | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ### Open at this moment
 
