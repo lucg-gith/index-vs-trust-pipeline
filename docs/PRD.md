@@ -2,15 +2,29 @@
 
 **Last updated:** 2026-09-23
 
-**Current position:** **Step 14 — the atomic fact returns — is specced and awaiting
-agreement (2026-09-23).** The professor's feedback on the dimensional model asks for two
-changes: the fact must sit at the atomic grain, and the bridge must leave the star with
-`dim_manager` joining the fact directly. `gold.fact_monthly_performance` takes grain
-(ticker, month, manager) at **36,724 rows**, the horizon maths moves to
-`semantic.v_horizon_performance`, and the model becomes a pure star. A fifth dimension,
-`dim_mandate`, splits `aic_sector` into region, asset class and style so the model answers
-*dónde*. Nothing is built; step
-13 remains the running pipeline. Spec: `specs/11_monthly_fact/monthly-fact.md`.
+**Current position:** **Step 14 — the atomic fact returns — is built and committed
+(`a17c2ad`, 2026-09-23), not yet verified.** The jobs have not run against it.
+
+`gold.fact_monthly_performance` takes the grain (ticker, month, manager) at **36,724 rows**,
+the horizon numbers move to `semantic.v_horizon_performance`, and every dimension now reaches
+the fact through a single key — **a pure star**. A fifth dimension, `dim_mandate`, splits
+`aic_sector` into region, asset class and style so the model answers *dónde*. Tasks go
+42 → **45** (setup 27, pipeline 18).
+
+The staging SQL was validated against the live warehouse before commit: **36,724 rows,
+15,333 trust-months, allocation factors summing to 15,333**, and all **440** horizon rows
+matching the table they replace with **zero** differences in `total_return`, `volatility`
+or `income_return`.
+
+*A pre-existing defect was found and fixed on the way:* SPY was recorded as beating itself at
+3 and 1 year on stored gaps of `2.22e-16`, and the flag was never stable across query plans.
+Comparisons now carry a `1e-9` tolerance. **No published beat rate moves** — they filter
+`entity_type = 'Trust'`, and SPY was never counted in them. One consequence: the retired
+notebook's claim of **12** beaters at 10 years is wrong; the table holds **11**.
+
+Next: the user merges, posts both job definitions through `jobs/reset`, and runs the two
+jobs. Documents and the deck are written against those results. Spec:
+`specs/11_monthly_fact/monthly-fact.md`.
 
 **Step 13 — manager dimensions and a single fact — is complete, run
 and verified (2026-09-22).** Both jobs green from commit `65cae77`: setup 25 of 25 tasks,
@@ -420,7 +434,7 @@ Specs live in `specs/<layer>/` and are gitignored — working notes, not deliver
 | 11 | **Listed trusts only** — cut at Silver, survivorship removed | ✅ | ✅ | ✅ | ✅ | 🔵 |
 | 12 | **Consistency audit** — make the documents match the pipeline | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | 13 | **Manager dimensions, one fact** — `dim_manager` + bridge, monthly fact retired | ✅ | ✅ | ✅ | ✅ | ✅ |
-| 14 | **Atomic fact, pure star** — `fact_monthly_performance` at (ticker, month, manager), bridge off the star, `dim_mandate` added | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| 14 | **Atomic fact, pure star** — `fact_monthly_performance` at (ticker, month, manager), bridge off the star, `dim_mandate` added | ✅ | ✅ | ✅ | ✅ | ⬜ |
 
 ### Open at this moment
 
