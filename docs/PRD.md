@@ -26,7 +26,7 @@ Yahoo, and this pull brought revised dividends for three tickers — `NBPE` (13 
 (18), `VOF` (1) — taking Silver's dividend total from 10,903.71 to 10,904.90.
 
 The clean test runs the **new** logic against the **frozen** pre-run snapshot still sitting
-in `gold.fact_monthly_performance`, which no longer refreshes: **440 keys matched, 0
+in the retired monthly table, which no longer refreshes: **440 keys matched, 0
 exactly-comparable columns differing, 0 doubles beyond 1e-12, largest difference 5.55e-17**
 — one unit in the last place. The code is equivalent; the data moved underneath it, which is
 the pipeline doing its job.
@@ -34,7 +34,7 @@ the pipeline doing its job.
 *Lesson worth keeping: "merging is the deploy" is only half true.* Merging deploys the
 notebooks, because `git_source` fetches them at run time. It does **not** deploy the job's
 task list, which lives on the job object. The first setup run failed on
-`gold_ddl_fact_monthly_performance` — a notebook this step deleted, still named by the stale
+the retired table's DDL task — a notebook this step deleted, still named by the stale
 23-task definition. Fixed by posting `orchestration/*.json` through `jobs/reset`, replacing
 only the `tasks` array so the schedule, run history and generated settings survived.
 
