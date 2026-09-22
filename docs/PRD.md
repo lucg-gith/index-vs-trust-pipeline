@@ -2,84 +2,84 @@
 
 **Last updated:** 2026-09-22
 
-**Step 9, deliverable 1 — the README rewrite — is done (2026-09-21).** Restructured into the
-standard portfolio sections (Description and Objectives, Results, Architecture, Technologies,
-Data Modeling, Analytical Dashboard, Data Sources, Repository Structure, How to Run) and
-**truth-passed against the warehouse**: every figure in it was re-queried from `semantic.v_beat_rate`,
-`gold.fact_horizon_performance` and `bronze.yf_pull_log` rather than copied forward. Three stale
-claims were corrected — 18 Yahoo deletions not 16, five horizons not four, and 96 usable tickers
-(90 active trusts, 3 delisted, 3 index) rather than the old 100/6 split.
+**Current position:** **Step 13 — manager dimensions and a single fact — is specced,
+agreed and built; it has not yet run (2026-09-22).**
 
-**Step 11, listed trusts only — the pipeline is built, run and verified; dashboard and documents remain (2026-09-21).** The universe is now the trusts that are still listed; the with-and-without-delisted comparison is being removed everywhere. The cut is made in **Silver**, so nothing below it has to filter again. Spec: `specs/08_listed_only/listed-only.md`, which supersedes `specs/03_gold/exclude-delisted.md`. Silver drops from 15,604 rows / 96 tickers to **15,333 / 93**, and `silver.ticker` from 121 rows to **102** — 99 listed trusts plus 3 index. Both figures were dry-run against the warehouse before the code was written. Gold follows: `dim_ticker` 121 → **102**, `fact_monthly_performance` 15,604 → **15,333**, `fact_horizon_performance` 445 → **440**. Five MERGEs gained a `WHEN NOT MATCHED BY SOURCE THEN DELETE` arm, without which the delisted rows already in those tables would simply have stayed. `status` is no longer an SCD2 driver — the dimension holds only listed trusts, so it cannot change within the table. Semantic follows the same cut: `v_beat_rate` collapses from 10 rows to **5**, one per horizon, and `status` is dropped from `v_measure` and `v_leaderboard` as a now-constant column.
+Manager and management group become dimensions. `dim_manager` sits at individual grain and
+is reached through `bridge_ticker_manager`, because the relationship is many-to-many in both
+directions: 70 of the 97 trusts with a named manager have more than one, and three managers
+run two trusts each — Sat Duhra (BNKR, HFEL), Simon Gergel (BUT, MRCH), Anthony Lynch (JCH,
+MRC). At the same time the monthly fact is retired, leaving
+`fact_horizon_performance` as the only fact and reading `silver.monthly_performance`
+directly.
 
-**Run end to end on 2026-09-21 and verified.** Both jobs ran from commit `0c84ba5`: setup (23 DDL tasks) then the pipeline (15 ETL tasks), both SUCCESS. Fourteen of the spec's sixteen checks pass and every measured figure matches the dry run exactly — `silver.monthly_performance` **15,333 / 93 tickers**, `silver.ticker` **102**, `price_repair_log` **336**, `gold.dim_ticker` **102**, `fact_monthly_performance` **15,333**, `fact_horizon_performance` **440**, `semantic.v_beat_rate` **5 rows**, `v_measure` **1,320**, `v_leaderboard` **440**. Zero rows for any of the 19 departed tickers anywhere in Silver, Gold or Semantic, and zero orphan `ticker_key` in either fact. Beat rate: 15y **5.3%** of 75, 10y **10.8%** of 83, 5y **14.6%** of 89, 3y **29.2%** of 89, 1y **41.6%** of 89. The archive cross-check still returns **88 / 87 / 0 / 0.0242**. The pipeline was run **twice** and every count was identical, which is the guard on the five new delete arms.
+Both changes reverse decisions that are on the record — step 6b moved the horizon fact the
+other way, and `dim_manager` had been rejected — so the spec says so plainly rather than
+quietly. **Neither is allowed to move a published number.** Measured read-only before the
+code was committed: all 440 keys match, every exactly-comparable column is identical on
+every row, and the largest difference across all nine DOUBLE columns is **5.55e-17**, one
+unit in the last place. Spec: `specs/10_manager_dimensions/manager-dimensions.md`; issues
+#16–#21.
 
-**The two checks still open are 15 and 16 — the dashboard and the documents.** The dashboard was fixed on 2026-09-22: both filters now carry a default, so the beat-rate bars no longer aggregate across measures and read the income rate as the total-return one, and the `survivorship` tile — which queried `v_measure.status`, a column that no longer exists — was dropped rather than repaired. Check 15 is closed. **Check 16 is part done (2026-09-22):** `personaldocs/DEFENSA-ES.md` and `personaldocs/PRESENTATION.md` have both been passed through, with every figure re-queried from the warehouse rather than carried forward, and this PRD with them. **Still describing the with-and-without comparison:** `README.md`, `docs/star-schema.html`, `personaldocs/star-schema-es.html`, `dashboard/POWERBI.md`, `personaldocs/PRESENTATION-DECK.pptx` and `CLAUDE.md`. `tools/check-docs.sh` is not written yet. Row 11 stays 🔵 on Verified until those are done.
+### The pipeline as it stands
 
-**Current position:** **Step 13 is specced and awaiting agreement (2026-09-22).** Manager and management group become dimensions — `dim_manager` at individual grain reached through `bridge_ticker_manager`, because the relationship is genuinely many-to-many: 70 of 97 trusts have more than one named manager, and three managers run two trusts each. At the same time `fact_monthly_performance` is retired, leaving `fact_horizon_performance` as the only fact. Both changes reverse earlier decisions on the record, and neither is allowed to move a published number. Spec: `specs/10_manager_dimensions/manager-dimensions.md`; issues #16–#21. **This supersedes step 6b below**, which moved the horizon fact the other way.
+Verified end to end on 2026-09-21 and unchanged in substance since:
 
-**Step 6b is complete and verified.** The horizon fact is now derived from `gold.fact_monthly_performance` rather than built from Silver in parallel with it, so the two facts cannot drift and the Workflow DAG shows the aggregate hanging off the atomic fact. Every number must reproduce unchanged. **Step 10, the restructure, is complete and verified.** The repository
-is now organised by *what a thing is* rather than which layer it sits in: `ddl/` holds the 23
-declarations, `etl/` holds the 15 loads, and `eda/`, `dashboard/` and `orchestration/` sit
-alongside them. **DDL has left the schedule** — it is deployment, run once from
-`orchestration/setup.json`, because re-running `CREATE TABLE IF NOT EXISTS` every month is work
-that can only ever do nothing. Job `218866821337014` keeps its id and run history, reset from 44
-tasks to **15 ETL tasks**, and its dependency edges drop from 96 to 17 — 18 after step 6b added the fact-to-fact edge, and **22** after the 2026-09-22 correction below. Two semantic views that
-nothing read (`v_growth_of_100`, `v_universe`) and the superseded `trust_universe_seed.csv` are
-deleted. **No Silver or Gold notebook was edited**, so no published number may move — that is
-the acceptance test, and it passed: both jobs ran green (23 of 23, then 15 of 15 twice) and every figure came back identical. Spec: `specs/07_restructure/restructure.md`.
+| | |
+|---|---|
+| `silver.monthly_performance` | **15,333** rows / 93 tickers |
+| `silver.ticker` | **102** — 99 listed trusts plus 3 index |
+| `silver.price_repair_log` | **336** |
+| `gold.dim_ticker` | **102** |
+| `gold.fact_horizon_performance` | **440** |
+| `gold.dim_manager` | **227** *(step 13, not yet run)* |
+| `gold.dim_management_group` | **53** *(step 13, not yet run)* |
+| `gold.bridge_ticker_manager` | **230** *(step 13, not yet run)* |
+| `semantic.v_beat_rate` | **5** rows, one per horizon |
+| `v_measure` / `v_leaderboard` | **1,320** / **440** |
 
-**Orchestration edges corrected 2026-09-22.** `silver_etl_monthly_performance` reads
-`bronze.yf_pull_log` for the partial-month cutoff and for currency, but did not depend on it —
-the job ran green only because that task happened to finish first. Fixed, along with a missing
-`gold_etl_dim_ticker` -> `silver_etl_monthly_performance` edge and one deliberate gate edge that
-keeps every layer rendering as a single column in the job graph. **15 tasks, 22 edges**, deployed
-with `jobs/update` so the schedule and run history survive. No notebook changed, so no published
-number moves. Recorded in `specs/05_orchestration/workflow.md`.
+Beat rate: 15y **5.3%** of 75, 10y **10.8%** of 83, 5y **14.6%** of 89, 3y **29.2%** of 89,
+1y **41.6%** of 89. The archive cross-check returns **88 / 87 / 0 / 0.0242**.
 
-**Step 9, the presentation, is specced and awaiting approval** —
-`specs/06_presentation/presentation.md`. Five deliverables: README rewrite, five images, an
-editable 8-slide `.pptx` deck whose speaker notes double as the presenter guide, the recorded
-video, and a LinkedIn post — preceded by a **truth
-pass**, because the same fact currently carries three different values across README, PRD and
-PRESENTATION, and the warehouse settles each one before anything is recorded. A governing
-**plain-language pair rule** now applies to all five: keep the technical term, always gloss it
-in the same breath. The talk itself is already written in `personaldocs/PRESENTATION.md`; the
-video goes to `youtube.com/luciagarredata`.
-**Steps 8 and 8b are complete and verified. The Workflow is live.** Job `218866821337014` runs on a monthly schedule, sourced from GitHub `main`, and the degraded-pull guard has been seen to fire and refuse rather than overwrite. Step 8b — one DDL task per object, 44 tasks,
-and on 2026-09-21 **the pipeline ran green end to end for the first time**, Landing through
-Semantic, including a fresh Yahoo pull. Not one published number moved, which is what a move
-rather than a rewrite should do. Spec and its one deviation:
-`specs/05_orchestration/ddl-split.md`. Orchestration is specced in
-`specs/05_orchestration/workflow.md`, one job on a monthly schedule, sourced from
-GitHub rather than the workspace. Revised 2026-09-20 to layer-first task names
-(`bronze_ddl`, `gold_etl_dim_ticker`) with the notebooks renamed to match, and to a layer-gate
-graph — each layer's DDL task is the gate into that layer. **Step 7 is complete:** the five semantic
-views and the dashboard are both built and verified. The dashboard is a Databricks AI/BI page
-created through the Lakeview REST API and published — one page, seven tiles, five datasets,
-its definition version-controlled at `dashboard/beat_rate.lvdash.json`. A Power BI
-build sheet in the same folder reproduces it by hand, because the Power BI REST API cannot
-author report visuals. **Gold is complete and
-the answer is in the warehouse:** only **5.3%** of
-UK investment trusts beat the S&P 500 over 15 years, **10.8%** over 10 — and **none** beat it
-over 15 or 10 years while also being less volatile. `gold.fact_horizon_performance` holds **440** rows across five horizons, with return, growth,
-income, volatility, risk-adjusted return and three stored ranks. Growth — `price_return`,
-dividends excluded — was added 2026-09-20 so the dashboard can show return and growth side by
-side. `gold.fact_monthly_performance`
-holds **15,333** rows with zero orphan keys against either dimension. **Silver is verified** on Databricks as
-of 2026-09-21, on the listed-only universe: **15,333** rows across **93**
-tickers. Landing, Bronze and EDA are
-all verified too. *(The figures in the step records further down are dated: they record what
-each step produced at the time, before the universe was cut.)*
+Two jobs, both sourced from GitHub `main`, so merging is the deploy:
+`orchestration/setup.json` (**25** DDL tasks, unscheduled — deployment) and job
+`218866821337014` from `orchestration/workflow.json` (**17** ETL tasks, monthly). The
+pipeline is run **twice** on every change and every count must be identical; that is the
+guard on the MERGE delete arms.
 
-Writing the Silver spec re-derived the scale-repair evidence against the warehouse and
-**overturned two EDA claims**: the corrupt prices are not clean powers of ten, and the true
-cost of cleaning is 0.67% rather than 2.43%, because most bad rows are repairable from their
-own high and low. It also added a new decision — Silver keeps only **2011-08 onward**, which
-shrinks `dim_date` from ~710 rows to ~181. The price source changed on 2026-09-19 from the
-CSV to Yahoo Finance, which adds dividends and history; Bronze was rebuilt the same week
-against the new Landing.
+### What is still open
 
+- **Step 13 has not run.** The notebooks are committed but the jobs have not executed
+  against them, and the retired monthly table has not been dropped. Dropping it is
+  deliberately last, so reverting the merge restores the old pipeline exactly.
+- **Step 9** — the deck, the video and the LinkedIn post. The README rewrite is done.
+- **`personaldocs/PRESENTATION-DECK.pptx`** still shows the old model. It is a binary and
+  needs its own pass.
+
+### Settled and superseded
+
+The universe is **listed trusts only** (step 11), cut once in Silver so nothing below it
+filters again. The with-and-without-delisted comparison is gone, and `status` is no longer
+an SCD2 driver — the dimension holds only listed trusts, so it cannot change within the
+table. Spec: `specs/08_listed_only/listed-only.md`.
+
+The repository is organised by *what a thing is* rather than which layer it sits in (step
+10): `ddl/` holds the declarations, `etl/` holds the loads, and `eda/`, `dashboard/` and
+`orchestration/` sit alongside them. DDL left the schedule — re-running
+`CREATE TABLE IF NOT EXISTS` every month is work that can only ever do nothing.
+
+**Step 6b is superseded by step 13.** It had pointed the horizon build at the monthly fact
+so the two could not drift; with only one fact left there is nothing to drift from.
+
+Earlier numbers quoted in this file's history have been removed rather than annotated —
+`git log` is the changelog, and a document that carries two versions of the same figure is
+how the next reader gets the wrong one.
+
+Two earlier findings that still stand: writing the Silver spec **overturned two EDA
+claims** — the corrupt prices are not clean powers of ten, and the true cost of cleaning is
+0.67% rather than 2.43%, because most bad rows are repairable from their own high and low.
+Silver keeps only **2011-08 onward**, which is why `dim_date` is 181 rows. The price source
+changed on 2026-09-19 from the CSV to Yahoo Finance, which adds dividends and history.
 ---
 
 ## 1. The question
@@ -287,33 +287,67 @@ reference**. Five schemas.
 **No duplicates, guaranteed:** OVERWRITE into Landing and Bronze, MERGE on the business key
 into Silver and Gold.
 
-### Gold — a true star
+### Gold — one fact, four dimensions, one bridge
 
-Both dimensions join **directly** to both facts. Nothing is snowflaked.
+Three dimensions join the fact directly. `dim_manager` reaches it through a bridge, because
+the trust-to-manager relationship is many-to-many. **It is therefore not a pure star**, and
+the README says so rather than glossing it.
 
 ```
-dim_date  ──────────┐
-                    ├──►  fact_monthly_performance
-dim_ticker (SCD2) ──┤     fact_horizon_performance
-                    ┘
+dim_date ─────────────────┐   (role-played: as-of, window start, window end)
+dim_management_group ─────┤
+dim_ticker (SCD2) ────────┼──►  fact_horizon_performance
+                          │            ▲
+dim_manager ──► bridge_ticker_manager ─┘
 ```
 
+- **`fact_horizon_performance`** — one row per (ticker, horizon), 5 horizons, **440 rows**.
+  **The only fact**, built straight from `silver.monthly_performance`. Carries
+  `total_return`, `annualised_return`, `index_return_same_period`, `beat_index`, the risk
+  pair `volatility` / `index_volatility_same_period` / `risk_adjusted_return`, and
+  `management_group_key`.
 - **`dim_ticker`** — trusts *and* SPY together, so trust-vs-index is a self-join on one
   fact rather than a union. `ticker_key = MD5(CONCAT_WS('|', ticker, effective_start_month))`.
-  **A new version row opens when `manager`, `management_group` or `status` changes.**
-  SPY never versions.
+  **A new version row opens when `manager` or `management_group` changes.** `status` stopped
+  being a driver at step 11: the table holds only listed trusts, so it cannot change within
+  it. SPY never versions.
+- **`dim_manager`** — **227 rows**, one per named individual, split out of the
+  comma-separated manager list on the same `', '` delimiter Silver uses for sole/multi.
+- **`dim_management_group`** — **53 rows**: 51 houses plus `NoInfo` and `NotApplicable`.
+  Single valued, so the fact carries `management_group_key` and joins it directly, with no
+  bridge.
 - **`dim_date`** — monthly, `month_key` a plain `YYYYMM` INT, not a hash: readable in
-  output and sorts naturally. **Spans 2011-08 to the latest complete month (~181 rows)**,
+  output and sorts naturally. **Spans 2011-08 to the latest complete month (181 rows)**,
   trimmed to the study window by Silver rule S3 — Yahoo reaches back to 1967-12, but the
   longest horizon is 15 years and the pre-2011 data is 12.4% corrupt against 0.67% inside
-  the window. *Revised 2026-09-20; it briefly read ~710 rows from 1967-12.*
-- **`fact_monthly_performance`** — one row per (ticker, month). Carries the **versioned**
-  `ticker_key`, resolved once at build time, so "returns while managed by X" is a plain
-  join with no date-range condition to forget.
-- **`fact_horizon_performance`** — one row per (ticker, horizon), 5 horizons. `total_return`,
-  `annualised_return`, `index_return_same_period`, `beat_index`, and the risk pair added
-  2026-09-20: `volatility`, `index_volatility_same_period`, `risk_adjusted_return`.
+  the window. The fact carries three date keys — as-of, window start and window end — so
+  the dimension is role-played rather than joined once.
+- **`bridge_ticker_manager`** — grain (ticker_key, manager_key), **230 rows** over 97 trusts
+  and 227 managers. Keyed on the **versioned** `ticker_key`, so a manager change opens a new
+  ticker version with its own bridge rows. That is the one place the SCD2 history is read.
 
+### Why a bridge, and what it costs
+
+The relationship is many-to-many **in both directions**: 70 of the 97 trusts with a named
+manager have more than one, and three managers run two trusts each — Sat Duhra (BNKR, HFEL),
+Simon Gergel (BUT, MRCH), Anthony Lynch (JCH, MRC). Those three are the whole justification.
+Without them it would be one-to-many and the manager could hang off the ticker with no
+bridge at all, which is why a verification cell asserts them by name.
+
+The costs, stated rather than hidden:
+
+- **Not a pure star.** `dim_manager` sits one hop from the fact.
+- **Fan-out is real.** A manager-level count double-counts a multi-manager trust.
+  `allocation_factor` — one over the manager count — gives two defensible aggregations, and
+  `v_beat_rate_by_cut` names which it uses: **impact** (ignore the factor; right for "what
+  share of managers had a trust that beat the index") or **allocated** (weight by it; right
+  for anything that must reconcile to the 440 rows).
+- **The SCD2 lost its strongest consumer** when the monthly fact went. The bridge partly
+  replaces it, but no fact reads a non-current version.
+
+A `dim_manager` built on the manager *list* rather than the individuals was rejected: every
+trust's list is unique, so it would have been 97 rows for 97 trusts — a copy of `dim_ticker`
+under another name.
 ### Why the SCD2 is on the manager
 
 The manager file is a snapshot, so on run 1 every trust is version 1 and history accrues
@@ -358,7 +392,7 @@ Specs live in `specs/<layer>/` and are gitignored — working notes, not deliver
 | 10 | **Restructure** — `ddl/` and `etl/`, DDL off the schedule | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 11 | **Listed trusts only** — cut at Silver, survivorship removed | ✅ | ✅ | ✅ | ✅ | 🔵 |
 | 12 | **Consistency audit** — make the documents match the pipeline | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
-| 13 | **Manager dimensions, one fact** — `dim_manager` + bridge, monthly fact retired | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| 13 | **Manager dimensions, one fact** — `dim_manager` + bridge, monthly fact retired | ✅ | ✅ | ✅ | ✅ | ⬜ |
 
 ### Open at this moment
 
@@ -372,9 +406,9 @@ Specs live in `specs/<layer>/` and are gitignored — working notes, not deliver
   2011-08 onward**, because nothing older is read by any metric and the pre-2011 data is
   12.4% corrupt against 0.67% inside the window — this shrinks `dim_date` from ~710 rows to
   ~181 and is a change to a previously agreed design point.
-- **Silver is verified.** `silver.monthly_performance` holds **15,604 rows across 96
-  tickers**, `silver.ticker` holds **121**, and `silver.price_repair_log` holds **346** —
-  252 repaired, 94 deleted. Both integrity checks return **0**: no non-positive close, and
+- **Silver is verified.** Row counts of the day are superseded by the listed-only cut; the
+  current ones are in "The pipeline as it stands" above. The repair split was 252 repaired,
+  94 deleted. Both integrity checks return **0**: no non-positive close, and
   nothing left more than 2x from its neighbourhood median. `PCFT` 2019-11 came back as
   141.25 from a recorded 0.0, `JEMA` 2022-12 as 84.877 from 42.87, and `CSH`'s maximum close
   fell from 112.8 to 2.945.
@@ -395,7 +429,7 @@ Specs live in `specs/<layer>/` and are gitignored — working notes, not deliver
 - **A documentation error was found and corrected:** HFEL's old "+39.0% total return" did not
   reinvest dividends while the SPY "+312%" it was paired with did. The pipeline compounds
   both sides identically and gives HFEL **+74.7%**.
-- **The job was submitted twice and returned identical counts** — now **15,604 / 121 / 346** — with row counts equal to distinct business keys in every table. Delta history proves it directly: run 1 of the split repair reported **88 inserted, 15,516 updated**, and run 2 reported **0 inserted, 15,604 updated, 0 deleted** in both Silver and Gold, with `fact_horizon_performance` at **0 inserted, 445 updated** both times. That is the MERGE doing its job, and the answer to "how do you guarantee no duplicates?"
+- **The job was submitted twice and returned identical counts**, with row counts equal to distinct business keys in every table. Delta history proves it directly: run 1 of the split repair reported **88 inserted**, and run 2 reported **0 inserted, 0 deleted** in both Silver and Gold, with the horizon fact showing **0 inserted** both times — every row updated in place, none added. That is the MERGE doing its job, and the answer to "how do you guarantee no duplicates?"
 - **One prediction was wrong and the data was right:** distinct `management_group` is **53**,
   not 52, because 19 trusts carry an empty string rather than a null. The 52 real groups are
   intact. Whether to normalise `''` to null is **open for Gold**, where the column is used.
@@ -454,13 +488,12 @@ repair that the Landing spec had retired.
 
 **Step 4 — Silver** *(spec approved and built 2026-09-20; three notebooks, verifying)*
 Eleven rules (S1–S11), each citing the EDA finding it answers. Three tables: `silver.ticker`
-(121 rows), `silver.monthly_performance` (15,604 rows) and `silver.price_repair_log` (346
-rows, the audit trail for every value changed or removed).
+, `silver.monthly_performance` and `silver.price_repair_log` — the last being the audit
+trail for every value changed or removed.
 
 The hard rule is **S2, scale repair**: detect a close that is zero or more than 2x from the
 median of its 13-month neighbourhood, repair it to that bar's own `(High + Low) / 2`, re-test
-the repair, and delete the month if it still fails. **252 repaired, 88 split-repaired, 6 deleted** out of
-15,604 — 2.2%. It is verified out-of-sample against the next month's opening price (2.17%
+the repair, and delete the month if it still fails. **252 repaired, 88 split-repaired, 6 deleted** — 2.2% of the Silver rows of the day. It is verified out-of-sample against the next month's opening price (2.17%
 error repaired, against 447% uncorrected and 0.47% for a clean row), and proved to be
 catching data defects rather than volatility by firing **zero** times in March 2020 while
 firing 24 times in each of two calm months. It also subsumes the `PCFT` zero with no special
@@ -480,9 +513,9 @@ Yahoo left four quarter-end months — 2011-12, 2012-03, 2012-06, 2012-09 — on
 scale for 22 trusts, so Silver correctly refuses to repair the bar and deletes the month,
 costing 8 monthly returns each. One extra repair candidate, `close / F` where `F` is the
 product of the splits Yahoo itself reports after that month, rescues **88 of the 94 deleted
-rows**. Simulated read-only against Bronze on 2026-09-21: `fact_monthly_performance` goes
-**15,516 → 15,604**, the study stays at **96** tickers and `fact_horizon_performance` at
-**445**, and the CSV archive — an independent provider corrupted in *different* months —
+rows**. Simulated read-only against Bronze on 2026-09-21: the monthly grain gained those 88
+rows, the study held its ticker count and the horizon fact held its row count, and the CSV
+archive — an independent provider corrupted in *different* months —
 agrees with **87 of the 88** repaired prices and with **none** of the originals. Spec in
 `specs/02_silver/split-repair.md`, closed as issue #14. **Run 2026-09-21, all seven tasks green.** The beat rates did not move at all — 5.3 / 10.6 / 15.6 / 30.0 / 41.6 — because eight restored months changed returns without flipping a verdict. What moved: ATT from 24.9% a year to 22.9%, out-yielding from 40 of 76 to 41, and 15-year median volatility 24.2% to 24.0%. Re-measured in
 every published figure.
@@ -492,22 +525,17 @@ every published figure.
 opening version rows.
 
 **Step 6 — Gold facts**
-`fact_monthly_performance`, then `fact_horizon_performance` at **five horizons** with the
+A monthly fact, then `fact_horizon_performance` at **five horizons** with the
 36-month minimum, delisted trusts judged over their own lifespan against the index over that
 same span, and **volatility plus risk-adjusted return** aggregated over each window.
 
 
-**Step 6b — the horizon fact reads the monthly fact** *(2026-09-21)*
-`fact_horizon_performance` was built from `silver.monthly_performance`, which left
-`fact_monthly_performance` with nothing reading it and let two tables built off the same
-source drift apart. The horizon build now reads the atomic fact, so the lineage is Silver →
-atomic fact → aggregate fact, and `dim_date` supplies the `ADD_MONTHS` window arithmetic it
-was always commented for. One dependency added to the job graph. No DDL, no column changed,
-and every published figure came back identical. Verified read-only on the warehouse: the new
-logic returns 445 rows against the stored 445, all 445 keys match, and **0 rows differ** on
-total return, volatility, index return, beat flag, months used or window bounds. The beat
-rates re-queried unchanged — 5.3% at 15 years, 10.6% at 10, and 0.0% beat it while also being
-calmer. The change bought lineage and moved no answer.
+**Step 6b — the horizon fact reads the monthly fact** *(2026-09-21; **superseded by step 13**)*
+The horizon build was pointed at the monthly fact rather than at Silver, so the two could not
+drift apart. Verified read-only, every key matched and no row differed. Step 13 reverses it:
+with the monthly fact retired there is only one fact and nothing left to drift from, and the
+horizon build reads Silver again. Both directions were verified the same way, which is the
+point — the lineage changed twice and the answer never did.
 
 **Step 7 — Semantic and dashboard** *(done)*
 Five thin views over Gold, then one AI/BI dashboard page over two of them. Dashboard scope was
@@ -545,7 +573,7 @@ them. The five `<layer>_ddl` schema notebooks become one `ddl/ddl_schemas`.
 
 The change that matters is that **DDL left the schedule**. `CREATE TABLE` is deployment, not
 pipeline: it runs once, from `orchestration/setup.json`, which deliberately has no schedule.
-The monthly job is 15 ETL tasks — down from 44 — and its dependency edges drop from 96 to 17 — 18 after step 6b added the fact-to-fact edge, and **22 today**, after the 2026-09-22 pass that declared the reads Silver was making without depending on them,
+The monthly job is **17 ETL tasks** and its dependency edges drop from 96 to 17 — 18 after step 6b added the fact-to-fact edge, and **22 today**, after the 2026-09-22 pass that declared the reads Silver was making without depending on them,
 because removing the DDL gate nodes let each source run as its own lane from Landing to Bronze
 before converging at Silver. That reverses the layer-gate decision of step 8 for a stated
 reason: with the gate nodes gone, layer gates would have meant 20 crossing edges where lanes
@@ -553,8 +581,8 @@ give 5.
 
 Two semantic views nothing read (`v_growth_of_100`, `v_universe`) and the superseded
 `trust_universe_seed.csv` are deleted. **No Silver or Gold notebook was edited**, so the
-acceptance test is that nothing moves: 445 horizon rows, 15,604 monthly rows, and beat rates
-5.3 / 10.6 / 15.6 / 30.0 / 41.6. Spec: `specs/07_restructure/restructure.md`.
+acceptance test is that nothing moves: every horizon row, every monthly row and every beat
+rate came back identical. Spec: `specs/07_restructure/restructure.md`.
 
 
 ---

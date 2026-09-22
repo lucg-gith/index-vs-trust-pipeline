@@ -59,6 +59,13 @@ scan() { # scan <pattern> [extra grep args...]
     | grep -Ev "$SKIP_PATH" || true
 }
 
+scan_number() { # scan_number <digits> [extra grep args...]
+  # Bounded so 121 does not match inside 35,121 and 445 does not match inside 1,445.
+  local n="$1"; shift
+  grep -rniE "(^|[^0-9,.])${n}($|[^0-9,.])" . "${EXCLUDES[@]}" --binary-files=without-match -l "$@" 2>/dev/null \
+    | grep -Ev "$SKIP_PATH" || true
+}
+
 report() { # report <pattern> <why> <hits>
   [ -z "$3" ] && return 0
   fails=$((fails + 1))
@@ -73,7 +80,7 @@ for entry in "${PHRASES[@]}"; do
 done
 for entry in "${NUMBERS[@]}"; do
   report "${entry%%	*}" "${entry##*	}" \
-    "$(scan "${entry%%	*}" --include='*.md' --include='*.html')"
+    "$(scan_number "${entry%%	*}" --include='*.md' --include='*.html')"
 done
 [ "$fails" -eq "$before_negative" ] && echo "  clean"
 

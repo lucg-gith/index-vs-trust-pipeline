@@ -101,51 +101,72 @@ closing SCD Type 2 versions, and `RANK` over `PARTITION BY` for the leaderboards
 
 ## Data Modeling
 
-The Gold layer is a **true star schema** — both dimensions join **directly** to both facts,
-with nothing snowflaked:
+The Gold layer is a star schema with **one fact and four dimensions**. Three dimensions join
+the fact directly; `dim_manager` reaches it through a bridge, because a trust has several
+managers and a manager can have several trusts:
 
 ```
-dim_date  ──────────┐
-                    ├──►  fact_monthly_performance   (ticker, month)
-dim_ticker (SCD2) ──┤            │
-                    ┘            └──►  fact_horizon_performance   (ticker, horizon)
-                                        ▲          ▲
-                    both dimensions join this fact directly too
+dim_date  ────────────────┐   (role-played: as-of month, window start, window end)
+dim_management_group ─────┤
+dim_ticker (SCD2) ────────┼──►  fact_horizon_performance   (ticker, horizon)
+                          │            ▲
+dim_manager ──► bridge_ticker_manager ─┘
 ```
 
-The two facts sit at different grains, and the second is **derived from the first**:
-`fact_horizon_performance` is built from `fact_monthly_performance`, not from Silver alongside
-it. The aggregate is computed from the detail it aggregates, so the two cannot drift apart.
+**Fact table:**
 
-**Fact tables:**
-
-- **`fact_monthly_performance`** — grain: one row per ticker per month. 15,604 rows.
-  Carries `close`, `dividend`, `price_return` and `total_return`, plus the *versioned*
-  `ticker_key`.
-- **`fact_horizon_performance`** — grain: one row per ticker per horizon. 445 rows across
+- **`fact_horizon_performance`** — grain: one row per ticker per horizon. 440 rows across
   the five horizons. Carries `total_return`, `annualised_return`, `income_return`,
   `volatility` and `risk_adjusted_return`, the matching index figures for the same period,
-  the `beat_index` flag, and three stored ranks.
+  the `beat_index` flag, and three stored ranks. It is built directly from
+  `silver.monthly_performance`.
 
 **Dimension tables:**
 
-- **`dim_ticker`** (**SCD Type 2**) — 121 rows holding the trusts *and* the index together,
+- **`dim_ticker`** (**SCD Type 2**) — 102 rows holding the trusts *and* the index together,
   with `manager`, `management_group`, `aic_sector`, `currency` and `status`. A new version
-  opens when **manager**, **management group** or **listing status** changes, dated by
-  `effective_start_month` / `effective_end_month` with an `is_current` flag. The surrogate
-  key is `MD5(CONCAT_WS('|', ticker, effective_start_month))`.
+  opens when **manager** or **management group** changes, dated by `effective_start_month` /
+  `effective_end_month` with an `is_current` flag. The surrogate key is
+  `MD5(CONCAT_WS('|', ticker, effective_start_month))`.
+- **`dim_manager`** — 227 rows, one per named individual, split out of the comma-separated
+  manager list.
+- **`dim_management_group`** — 53 rows: 51 houses plus `NoInfo` and `NotApplicable`. Single
+  valued, so the fact carries `management_group_key` and joins it directly.
 - **`dim_date`** — monthly grain, 181 rows covering 2011-08 to 2026-08. `month_key` is a
   plain `YYYYMM` integer, deliberately not a hash, so a fact row stays readable without a
-  join.
+  join. The fact carries three of them — the as-of month, the window start and the window
+  end — so it is role-played rather than joined once.
+
+**Bridge table:**
+
+- **`bridge_ticker_manager`** — 230 rows over 97 trusts and 227 managers, carrying
+  `manager_position` and `allocation_factor`.
 
 Holding the index inside `dim_ticker` alongside the trusts is what makes the star work:
 comparing a trust to the S&P 500 becomes a self-join on one fact table instead of a union
 of two.
 
-`dim_manager`, `dim_management_group` and a degenerate rank dimension were each considered
-and rejected — manager and group are attributes of a ticker that change over time, which is
-precisely what SCD Type 2 already handles.
+### Why a bridge, and what it costs
 
+The trust-to-manager relationship is many-to-many in both directions. 70 of the 97 trusts
+with a named manager have more than one, and three managers run two trusts each — Sat Duhra
+(BNKR, HFEL), Simon Gergel (BUT, MRCH) and Anthony Lynch (JCH, MRC). Those three are the
+whole reason a bridge is needed rather than a plain foreign key: without them it would be
+one-to-many and the manager could simply hang off the ticker.
+
+The cost is honest and worth stating. **This is not a pure star** — `dim_manager` sits one
+hop from the fact, and any manager-level count double-counts a multi-manager trust. The
+bridge carries `allocation_factor`, one over the number of managers, so there are two
+defensible aggregations and the semantic layer names which one it uses:
+
+- **impact** — ignore the factor, so a trust counts once for each of its managers. Right for
+  "what share of managers had a trust that beat the index".
+- **allocated** — weight by the factor, so the weights sum to one per trust. Right for any
+  count that must reconcile to the 440 rows in the fact.
+
+A dimension built on the manager *list* rather than the individuals was rejected: every
+trust's list is unique, so it would have been 97 rows for 97 trusts — a copy of `dim_ticker`
+under another name. A degenerate rank dimension was rejected outright.
 ## Analytical Dashboard
 
 One Databricks AI/BI page, seven tiles, built on five semantic views and version-controlled
@@ -156,7 +177,8 @@ as `dashboard/beat_rate.lvdash.json`.
 - **Beat rate** — the share of trusts above the index, on return, growth or income.
 - **Risk-adjusted verdict** — the share that beat the index *and* were less volatile than it.
 - **Index rank** — where the S&P 500 itself places in the field, always on screen.
-- **Survivorship gap** — the beat rate including and excluding delisted trusts, side by side.
+- **Beat rate by manager** — the same share cut through the bridge, so a trust counts
+  once for each of its named managers.
 
 **Visualisations:**
 
@@ -255,7 +277,7 @@ docs/           the PRD and the star-schema diagram
 ```
 
 `CREATE TABLE` is deployment, not pipeline. The DDL runs once from its own unscheduled job;
-the monthly job is **15 ETL tasks and nothing else**, because re-running
+the monthly job is **17 ETL tasks and nothing else**, because re-running
 `CREATE TABLE IF NOT EXISTS` every month is work that can only ever do nothing.
 
 Every notebook is named `<layer>_<ddl|etl>[_<object>]` — `bronze_ddl_trusts`,
