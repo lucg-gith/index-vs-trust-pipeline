@@ -13,8 +13,23 @@
       "displayName": "Share of trusts above the index, every horizon",
       "queryLines": [
         "-- Deliberately not filtered by horizon: this tile exists to show all five at once.\n",
-        "SELECT horizon_years, measure, pct_above, trusts_above, trusts\n",
+        "-- /100 is a unit change only: the number is the view's own pct_above, as a fraction.\n",
+        "SELECT horizon_years, measure, pct_above / 100 AS share_above, trusts_above, trusts\n",
         "FROM `index-vs-trust-pipeline`.semantic.v_measure_summary"
+      ]
+    },
+    {
+      "name": "beat_split",
+      "displayName": "Trusts that beat the index, and trusts that did not",
+      "queryLines": [
+        "-- A pie needs a real whole, so this counts trusts rather than averaging rates.\n",
+        "-- NULL counts as \"did not\", which is the same convention the published beat rate uses.\n",
+        "SELECT horizon_years, measure,\n",
+        "       CASE WHEN beats_index THEN 'Beat the index' ELSE 'Did not' END AS outcome,\n",
+        "       COUNT(*)                                                       AS trusts\n",
+        "FROM `index-vs-trust-pipeline`.semantic.v_measure\n",
+        "WHERE entity_type = 'Trust'\n",
+        "GROUP BY horizon_years, measure, outcome"
       ]
     },
     {
@@ -26,29 +41,12 @@
         "SELECT horizon_years, measure,\n",
         "       CONCAT(TRIM(REGEXP_REPLACE(REPLACE(management_group, ' (UK)', ''),\n",
         "              ' Asset Management| Investment Management| Global Investors| Investors', '')),\n",
-        "              ' (', COUNT(*), ')')                                              AS house,\n",
-        "       ROUND(100.0 * SUM(CASE WHEN beats_index THEN 1 ELSE 0 END) / COUNT(*), 1) AS pct_above\n",
+        "              ' (', COUNT(*), ')')                                            AS house,\n",
+        "       ROUND(1.0 * SUM(CASE WHEN beats_index THEN 1 ELSE 0 END) / COUNT(*), 3) AS share_above\n",
         "FROM `index-vs-trust-pipeline`.semantic.v_measure\n",
         "WHERE entity_type = 'Trust' AND management_group IS NOT NULL\n",
         "GROUP BY horizon_years, measure, management_group\n",
         "HAVING COUNT(*) >= 3"
-      ]
-    },
-    {
-      "name": "survivorship",
-      "displayName": "Including and excluding the delisted trusts",
-      "queryLines": [
-        "-- The gap between the cohorts is survivorship bias, in percentage points.\n",
-        "WITH c AS (\n",
-        "  SELECT horizon_years, measure, 'all trusts' AS cohort, beats_index\n",
-        "  FROM `index-vs-trust-pipeline`.semantic.v_measure WHERE entity_type = 'Trust'\n",
-        "  UNION ALL\n",
-        "  SELECT horizon_years, measure, 'survivors only', beats_index\n",
-        "  FROM `index-vs-trust-pipeline`.semantic.v_measure WHERE entity_type = 'Trust' AND status = 'active'\n",
-        ")\n",
-        "SELECT horizon_years, measure, cohort,\n",
-        "       ROUND(100.0 * SUM(CASE WHEN beats_index THEN 1 ELSE 0 END) / COUNT(*), 1) AS pct_above\n",
-        "FROM c GROUP BY horizon_years, measure, cohort"
       ]
     },
     {
@@ -129,6 +127,19 @@
                   ],
                   "disaggregated": false
                 }
+              },
+              {
+                "name": "f_beat_split_horizon_years",
+                "query": {
+                  "datasetName": "beat_split",
+                  "fields": [
+                    {
+                      "name": "horizon_years",
+                      "expression": "`horizon_years`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
               }
             ],
             "spec": {
@@ -147,12 +158,28 @@
                   {
                     "fieldName": "horizon_years",
                     "queryName": "f_top20_horizon_years"
+                  },
+                  {
+                    "fieldName": "horizon_years",
+                    "queryName": "f_beat_split_horizon_years"
                   }
                 ]
               },
               "frame": {
                 "showTitle": true,
                 "title": "Horizon (years)"
+              },
+              "selection": {
+                "defaultSelection": {
+                  "values": {
+                    "dataType": "INTEGER",
+                    "values": [
+                      {
+                        "value": "15"
+                      }
+                    ]
+                  }
+                }
               }
             }
           },
@@ -207,9 +234,9 @@
                 }
               },
               {
-                "name": "f_survivorship_measure",
+                "name": "f_top20_measure",
                 "query": {
-                  "datasetName": "survivorship",
+                  "datasetName": "top20",
                   "fields": [
                     {
                       "name": "measure",
@@ -220,9 +247,9 @@
                 }
               },
               {
-                "name": "f_top20_measure",
+                "name": "f_beat_split_measure",
                 "query": {
-                  "datasetName": "top20",
+                  "datasetName": "beat_split",
                   "fields": [
                     {
                       "name": "measure",
@@ -252,17 +279,29 @@
                   },
                   {
                     "fieldName": "measure",
-                    "queryName": "f_survivorship_measure"
+                    "queryName": "f_top20_measure"
                   },
                   {
                     "fieldName": "measure",
-                    "queryName": "f_top20_measure"
+                    "queryName": "f_beat_split_measure"
                   }
                 ]
               },
               "frame": {
                 "showTitle": true,
                 "title": "Compare on"
+              },
+              "selection": {
+                "defaultSelection": {
+                  "values": {
+                    "dataType": "STRING",
+                    "values": [
+                      {
+                        "value": "total return"
+                      }
+                    ]
+                  }
+                }
               }
             }
           },
@@ -413,8 +452,8 @@
                       "expression": "`horizon_years`"
                     },
                     {
-                      "name": "pct_above",
-                      "expression": "MAX(`pct_above`)"
+                      "name": "share_above",
+                      "expression": "MAX(`share_above`)"
                     }
                   ],
                   "disaggregated": false
@@ -439,7 +478,7 @@
                   "displayName": "horizon_years"
                 },
                 "y": {
-                  "fieldName": "pct_above",
+                  "fieldName": "share_above",
                   "scale": {
                     "type": "quantitative"
                   },
@@ -448,7 +487,14 @@
                     "hideLabels": true,
                     "hideGrid": true
                   },
-                  "displayName": "pct_above"
+                  "displayName": "share_above",
+                  "format": {
+                    "type": "number-percent",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 1
+                    }
+                  }
                 },
                 "label": {
                   "show": true
@@ -463,9 +509,9 @@
             }
           },
           "position": {
-            "x": 0,
+            "x": 4,
             "y": 5,
-            "width": 6,
+            "width": 4,
             "height": 6
           }
         },
@@ -483,8 +529,8 @@
                       "expression": "`house`"
                     },
                     {
-                      "name": "pct_above",
-                      "expression": "MAX(`pct_above`)"
+                      "name": "share_above",
+                      "expression": "MAX(`share_above`)"
                     }
                   ],
                   "disaggregated": false
@@ -509,15 +555,23 @@
                   "displayName": "house"
                 },
                 "y": {
-                  "fieldName": "pct_above",
+                  "fieldName": "share_above",
                   "scale": {
                     "type": "quantitative"
                   },
                   "axis": {
                     "hideTitle": true,
-                    "hideLabels": true
+                    "hideLabels": true,
+                    "hideGrid": true
                   },
-                  "displayName": "pct_above"
+                  "displayName": "share_above",
+                  "format": {
+                    "type": "number-percent",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 1
+                    }
+                  }
                 },
                 "label": {
                   "show": true
@@ -532,32 +586,28 @@
             }
           },
           "position": {
-            "x": 6,
+            "x": 8,
             "y": 5,
-            "width": 6,
+            "width": 4,
             "height": 6
           }
         },
         {
           "widget": {
-            "name": "survivorship_bars",
+            "name": "beat_split_pie",
             "queries": [
               {
                 "name": "main_query",
                 "query": {
-                  "datasetName": "survivorship",
+                  "datasetName": "beat_split",
                   "fields": [
                     {
-                      "name": "horizon_years",
-                      "expression": "`horizon_years`"
+                      "name": "outcome",
+                      "expression": "`outcome`"
                     },
                     {
-                      "name": "pct_above",
-                      "expression": "MAX(`pct_above`)"
-                    },
-                    {
-                      "name": "cohort",
-                      "expression": "`cohort`"
+                      "name": "trusts",
+                      "expression": "SUM(`trusts`)"
                     }
                   ],
                   "disaggregated": false
@@ -566,56 +616,39 @@
             ],
             "spec": {
               "version": 3,
-              "widgetType": "bar",
+              "widgetType": "pie",
               "encodings": {
-                "x": {
-                  "fieldName": "horizon_years",
-                  "scale": {
-                    "type": "categorical",
-                    "sort": {
-                      "by": "x-reversed"
-                    }
-                  },
-                  "axis": {
-                    "hideTitle": true
-                  },
-                  "displayName": "horizon_years"
-                },
-                "y": {
-                  "fieldName": "pct_above",
+                "angle": {
+                  "fieldName": "trusts",
                   "scale": {
                     "type": "quantitative"
                   },
-                  "axis": {
-                    "hideTitle": true,
-                    "hideLabels": true
-                  },
-                  "displayName": "pct_above"
-                },
-                "label": {
-                  "show": true
+                  "displayName": "Trusts"
                 },
                 "color": {
-                  "fieldName": "cohort",
+                  "fieldName": "outcome",
                   "scale": {
                     "type": "categorical"
                   },
-                  "displayName": "cohort"
+                  "displayName": "Outcome"
+                },
+                "label": {
+                  "show": true
                 }
               },
               "frame": {
                 "showTitle": true,
-                "title": "Survivorship",
+                "title": "Did they beat it, or not?",
                 "showDescription": true,
-                "description": "Including the delisted trusts, and excluding them. The gap is the bias"
+                "description": "Every trust measured at the selected horizon, split by whether it cleared the index"
               }
             }
           },
           "position": {
             "x": 0,
-            "y": 11,
-            "width": 5,
-            "height": 8
+            "y": 5,
+            "width": 4,
+            "height": 6
           }
         },
         {
@@ -841,10 +874,10 @@
             }
           },
           "position": {
-            "x": 5,
+            "x": 0,
             "y": 11,
-            "width": 7,
-            "height": 8
+            "width": 12,
+            "height": 9
           }
         }
       ]

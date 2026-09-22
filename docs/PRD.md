@@ -1,6 +1,6 @@
 # PRD — Do UK investment trusts beat the S&P 500?
 
-**Last updated:** 2026-09-21
+**Last updated:** 2026-09-22
 
 **Step 9, deliverable 1 — the README rewrite — is done (2026-09-21).** Restructured into the
 standard portfolio sections (Description and Objectives, Results, Architecture, Technologies,
@@ -14,7 +14,7 @@ claims were corrected — 18 Yahoo deletions not 16, five horizons not four, and
 
 **Run end to end on 2026-09-21 and verified.** Both jobs ran from commit `0c84ba5`: setup (23 DDL tasks) then the pipeline (15 ETL tasks), both SUCCESS. Fourteen of the spec's sixteen checks pass and every measured figure matches the dry run exactly — `silver.monthly_performance` **15,333 / 93 tickers**, `silver.ticker` **102**, `price_repair_log` **336**, `gold.dim_ticker` **102**, `fact_monthly_performance` **15,333**, `fact_horizon_performance` **440**, `semantic.v_beat_rate` **5 rows**, `v_measure` **1,320**, `v_leaderboard` **440**. Zero rows for any of the 19 departed tickers anywhere in Silver, Gold or Semantic, and zero orphan `ticker_key` in either fact. Beat rate: 15y **5.3%** of 75, 10y **10.8%** of 83, 5y **14.6%** of 89, 3y **29.2%** of 89, 1y **41.6%** of 89. The archive cross-check still returns **88 / 87 / 0 / 0.0242**. The pipeline was run **twice** and every count was identical, which is the guard on the five new delete arms.
 
-**The two checks still open are 15 and 16 — the dashboard and the documents.** The dashboard's `survivorship` dataset queries `v_measure.status`, a column that no longer exists, so that tile is broken until step B removes it. The README, the presentation decks and `docs/star-schema.html` still describe the with-and-without comparison. Row 11 stays 🔵 on Verified until both are done.
+**The two checks still open are 15 and 16 — the dashboard and the documents.** The dashboard was fixed on 2026-09-22: both filters now carry a default, so the beat-rate bars no longer aggregate across measures and read the income rate as the total-return one, and the `survivorship` tile — which queried `v_measure.status`, a column that no longer exists — was dropped rather than repaired. Check 15 is closed. The README, the presentation decks and `docs/star-schema.html` still describe the with-and-without comparison, so check 16 stays open. Row 11 stays 🔵 on Verified until the documents are done.
 
 **Current position:** **Step 6b is complete and verified.** The horizon fact is now derived from `gold.fact_monthly_performance` rather than built from Silver in parallel with it, so the two facts cannot drift and the Workflow DAG shows the aggregate hanging off the atomic fact. Every number must reproduce unchanged. **Step 10, the restructure, is complete and verified.** The repository
 is now organised by *what a thing is* rather than which layer it sits in: `ddl/` holds the 23
@@ -59,15 +59,16 @@ its definition version-controlled at `dashboard/beat_rate.lvdash.json`. A Power 
 build sheet in the same folder reproduces it by hand, because the Power BI REST API cannot
 author report visuals. **Gold is complete and
 the answer is in the warehouse:** only **5.3%** of
-UK investment trusts beat the S&P 500 over 15 years, **10.6%** over 10 — and **none** beat it
-over 15 or 10 years while also being less volatile. `gold.fact_horizon_performance` holds 445 rows across five horizons, with return, growth,
+UK investment trusts beat the S&P 500 over 15 years, **10.8%** over 10 — and **none** beat it
+over 15 or 10 years while also being less volatile. `gold.fact_horizon_performance` holds **440** rows across five horizons, with return, growth,
 income, volatility, risk-adjusted return and three stored ranks. Growth — `price_return`,
 dividends excluded — was added 2026-09-20 so the dashboard can show return and growth side by
-side; the re-merge updated all 445 rows and inserted none. `gold.fact_monthly_performance`
-holds 15,604 rows with zero orphan keys against either dimension. **Silver is verified** on Databricks as
-of 2026-09-20: three notebooks ran green on the first attempt, 15,604 rows across 96
-tickers, and every expected number matched bar one (see below). Landing, Bronze and EDA are
-all verified too.
+side. `gold.fact_monthly_performance`
+holds **15,333** rows with zero orphan keys against either dimension. **Silver is verified** on Databricks as
+of 2026-09-21, on the listed-only universe: **15,333** rows across **93**
+tickers. Landing, Bronze and EDA are
+all verified too. *(The figures in the step records further down are dated: they record what
+each step produced at the time, before the universe was cut.)*
 
 Writing the Silver spec re-derived the scale-repair evidence against the warehouse and
 **overturned two EDA claims**: the corrupt prices are not clean powers of ten, and the true
@@ -100,32 +101,36 @@ around) and **risk-adjusted return** (annualised return ÷ volatility — reward
 bounce). A trust that beat SPY by swinging twice as hard did not really beat it.
 *Added 2026-09-20; max drawdown and hit rate were deliberately left out to keep scope down.*
 
-Reported at **five horizons — 15, 10, 5, 3 and 1 years** — and **twice at each horizon**:
-once including delisted trusts, once excluding them.
+Reported at **five horizons — 15, 10, 5, 3 and 1 years** — once at each, over the trusts that
+are still listed.
 
-The full objective, including the four dashboard cuts, is in `specs/OBJECTIVE.md`.
+The full objective, including the dashboard cuts, is in `specs/OBJECTIVE.md`.
 
-### Why report it twice
+### Survivorship: detected, declared, not sized
 
 Funds that collapse stop being counted. Measure only the survivors and the industry looks
 better than it was — **survivorship bias**. Most published comparisons simply disclaim it.
-Reporting both numbers turns the bias into a measured quantity: the gap between the two
-*is* the bias, in percentage points.
 
-**Reframed 2026-09-19, and this is the honest version.** The project demonstrates the
-*mechanism* rather than sizing the effect. Two things support it:
+**Reframed 2026-09-19, narrowed again 2026-09-21, and this is the honest version.** The
+project demonstrates the *mechanism* rather than sizing the effect:
 
 - **Yahoo Finance has deleted 18 of the 118 trusts** in the universe. Ask it for `BCPT` or
   `CSH` and it answers `No data found, symbol may be delisted`. That deletion, recorded
   row by row in `landing.yf_pull_log_raw`, *is* survivorship bias happening in a live data
   source — not a caveat, but something the pipeline catches in the act.
-- **Two of those trusts are recoverable** from the archived CSV, so the beat rate can still
-  be computed with and without them.
+- **The universe is then declared rather than fudged.** Delisted trusts leave in Silver, and
+  every reported figure says "trusts still listed". The with-and-without pair was built,
+  measured, and **removed on 2026-09-21**: two recoverable trusts out of eighteen erased is a
+  thin basis for a precise number, and a comparison that looks precise but is not is worse
+  than not having it.
 
-Two trusts out of ~98 is a thin basis for a precise number, and the gap will be small. The
-claim is therefore "here is how the bias is created and how a pipeline can detect it",
-**not** "survivorship bias in UK trusts is N percentage points." Stating that limit plainly
-is stronger than overclaiming from a sample of two.
+The claim is therefore "here is how the bias is created and how a pipeline can detect it",
+**not** "survivorship bias in UK trusts is N percentage points."
+
+One argument gets *stronger* for the narrowing, and it is the one to make on stage: the
+universe skews toward large, well-known, long-surviving trusts — the ones most likely to have
+beaten the index. A 5.3% beat rate measured on them is therefore a **ceiling**, not an
+estimate. Correcting the bias could only push it down.
 
 This is still the project's main analytical contribution and the main thing to defend.
 
@@ -163,13 +168,13 @@ This is still the project's main analytical contribution and the main thing to d
 
 ### In
 
-- 96 UK investment trusts with usable monthly history from Yahoo, plus 2 delisted trusts
-  recovered from the CSV archive. 75 of them reach back 15 years or more.
+- **UK investment trusts that are still listed** — 90 with priced monthly history from Yahoo,
+  99 in the dimension. 75 of them reach back 15 years or more. Delisted trusts leave in Silver.
 - The S&P 500 via SPY, with IVV/VOO as a secondary credibility check.
 - **Total return on both sides** — price plus dividends, computed in Silver.
-- Beat rate at 5 horizons times 2 survivorship treatments.
+- Beat rate at 5 horizons, reported once each.
 - **Risk as well as return** — annualised volatility and risk-adjusted return at every horizon, for trusts and index alike.
-- SCD2 history on trust manager, management group and listing status.
+- SCD2 history on trust manager and management group.
 
 ### Out, and why
 
@@ -232,9 +237,14 @@ SPLG returns nothing.**
 
 ### `data/uk_investment_trusts_price_history_monthly.csv` — the delisted archive
 
-16,357 rows, 102 tickers, 2011-09-30 to 2026-09-17, price only. Still landed in full, but
-Silver takes **two tickers** from it: `BCPT` (158 rows to 2024-11) and `CSH` (112 rows to
-2026-03). Yahoo has erased both, and they are the entire delisted cohort.
+16,357 rows, 102 tickers, 2011-09-30 to 2026-09-17, price only. Still landed in full.
+
+**Its job changed on 2026-09-21.** It used to supply prices for `BCPT` and `CSH`, the two
+delisted trusts Yahoo has erased; with the listed-only universe it supplies **no prices at
+all**. It is kept as an **independent witness** to the split repair: of the 88 split repairs it
+can check, **87 agree after the repair and 0 agreed before**. That is external corroboration
+rather than the pipeline's own arithmetic agreeing with itself, which is worth more than the
+two price series it stopped providing.
 
 Four other tickers look delisted in this file but hold **one row each** — ADIG, BSIF, EOT,
 MNTN. They are noise, not histories.
@@ -499,10 +509,16 @@ calmer. The change bought lineage and moved no answer.
 Five thin views over Gold, then one AI/BI dashboard page over two of them. Dashboard scope was
 cut from four pages to seven tiles on 2026-09-20: three counters (return, growth, income),
 beat rate by horizon, beat rate by management group, the survivorship pair, and a top-20 table
-naming the managers with the index ranked into it.
-Three counters, one per question: over 15 years 5.3% beat the index on total return, 5.3%
-out-grew it on price alone, and 53.9% paid more income than it. At 5 years the first two split
-— 15.6% against 8.9% — which is the dividends doing the work. **Volatility was removed from the
+naming the managers with the index ranked into it. Revised 2026-09-22: the survivorship pair
+was dropped once the universe became listed-only, and a pie splitting the trusts into those
+that beat the index and those that did not took its place.
+The counter row was re-cut with it: it now reads the index's own gain, the best single trust,
+and **where the index ranks** — 7th of the field on total return over 15 years, 44th on income.
+The three-question comparison moved into the `Compare on` filter, and the numbers behind it
+still hold: over 15 years 5.3% beat the index on total return, 5.3% out-grew it on price alone,
+and 54.7% paid more income than it. At 5 years the first two split — 14.6% against 7.9% —
+which is the dividends doing the work. Both filters now carry a default (15 years, total
+return), without which the page opened aggregating across all three measures. **Volatility was removed from the
 dashboard on 2026-09-20** after three attempts at charting it; it stays computed in Gold, so
 the honest line is "I measured it and kept the page focused", not "I did not look at risk".
 Each tile owns its own dataset, so no click can recompute another tile. The three cuts by
@@ -546,7 +562,7 @@ acceptance test is that nothing moves: 445 horizon rows, 15,604 monthly rows, an
 | **yfinance is now a single point of failure.** It is an unofficial scraper and both sides of the comparison depend on it | The biggest risk in the project since 2026-09-19. Landing OVERWRITEs per run, so a bad pull replaces a good one. Mitigation: the pull log makes a degraded run obvious at a glance, and the verification cells assert exact symbol counts rather than "it ran" |
 | **The scale repair is the hardest piece.** 36 of 96 trusts carry mis-scaled rows inside the window, 743 in total, and the factor differs by ticker — CGT a clean 10x, CLDN roughly 1400x | Detect per row against the median of neighbouring months, derive the ratio, rescale. Step 3 must prove the detection works before step 4 relies on it. Excluding the affected trusts instead would discard 37% of the sample |
 | **The total-return calculation is the number everything rests on** | One formula, applied identically to trusts and SPY so any error cancels on both sides. Re-measured from `gold.fact_horizon_performance` 2026-09-21: HFEL over 10 years, price return **−22.9%** against total return **+74.7%**. *The older +39.0% figure did not reinvest the dividends while the SPY figure it was paired with did — an apples-to-oranges the pipeline does not repeat.* |
-| **Survivorship rests on 2 trusts** | Reframed: the claim is the mechanism, evidenced by Yahoo's 18 deletions, not a precise effect size. Stated as a limitation in the README rather than buried |
+| **Survivorship rested on 2 trusts** | **Resolved by removing the claim, 2026-09-21.** The with-and-without pair is gone; the universe is declared as listed-only. What survives is the mechanism, evidenced by Yahoo's 18 deletions, plus the direction of the bias: the survivors are the likeliest winners, so 5.3% is a ceiling. Stated as a limitation in the README rather than buried |
 | **SCD2 has no history on run 1** — the source is a snapshot | Expected and explained. Demo it live by changing a manager and re-running |
 | Time runs out before step 9 | Steps 1–6 clear "Ideal" on their own. Dashboard and video are bonus — cut from the end, not the middle |
 | Trusts with no manager in the metadata | They stay in `dim_ticker` with a null manager. Not dropped — the universe stays honest |
@@ -563,8 +579,9 @@ acceptance test is that nothing moves: 445 horizon rows, 15,604 monthly rows, an
 - [x] **Stated openly in the README:** returns are **total return** on both sides, built in
       Silver from `Close` plus `Dividends`, because Yahoo's `Adj_Close` applies dividends
       for SPY but not for UK trusts
-- [x] **Also stated openly:** the delisted cohort is 2 trusts, so the survivorship figure
-      illustrates the mechanism rather than sizing the effect
+- [x] **Also stated openly:** the universe is the trusts still listed, so the survivorship
+      work illustrates the mechanism rather than sizing the effect — and the resulting beat
+      rate is a ceiling, because survivors are the likeliest winners
 - [x] **Also stated openly:** returns are compared in each side's own currency, with no
       GBP/USD conversion
 
@@ -586,4 +603,4 @@ acceptance test is that nothing moves: 445 horizon rows, 15,604 monthly rows, an
 | Why a 1-year horizon as well? | It costs one row per trust and gives the recent picture to contrast against the 15-year one. Three years stays as the floor because 36 months is the minimum history to enter the facts at all. |
 | Why not use Yahoo's `Adj_Close`? | It is dividend-adjusted for SPY but not for UK trusts — 97 of 102 show an adjustment under 0.5%, including HFEL, which paid 237.7p of dividends on a share that started the window at 343p. Using it would understate the trusts. |
 | How do you know delisted trusts are missing? | The pipeline records it. `landing.yf_pull_log_raw` holds a row per requested symbol, and 18 trusts return nothing — 16 with `No data found, symbol may be delisted`, 2 with an empty frame. |
-| What would you do with more time? | Source real manager history so the SCD2 has depth on day one, and find a source for the delisted trusts so survivorship rests on more than two. |
+| What would you do with more time? | Source real manager history so the SCD2 has depth on day one, and find a source that keeps delisted trusts — with that I could put the with-and-without comparison back, which I removed precisely because only two companies were left to carry it. |
