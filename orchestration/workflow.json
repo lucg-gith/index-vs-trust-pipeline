@@ -136,6 +136,12 @@
         },
         {
           "task_key": "bronze_etl_trust_prices_csv"
+        },
+        {
+          "task_key": "bronze_etl_yf_pull_log"
+        },
+        {
+          "task_key": "bronze_etl_trusts"
         }
       ]
     },
@@ -168,6 +174,9 @@
       "depends_on": [
         {
           "task_key": "silver_etl_monthly_performance"
+        },
+        {
+          "task_key": "silver_etl_ticker"
         }
       ]
     },
@@ -181,6 +190,9 @@
       "depends_on": [
         {
           "task_key": "silver_etl_ticker"
+        },
+        {
+          "task_key": "silver_etl_monthly_performance"
         }
       ]
     },

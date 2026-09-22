@@ -22,10 +22,18 @@ declarations, `etl/` holds the 15 loads, and `eda/`, `dashboard/` and `orchestra
 alongside them. **DDL has left the schedule** — it is deployment, run once from
 `orchestration/setup.json`, because re-running `CREATE TABLE IF NOT EXISTS` every month is work
 that can only ever do nothing. Job `218866821337014` keeps its id and run history, reset from 44
-tasks to **15 ETL tasks**, and its dependency edges drop from 96 to 17 — 18 since step 6b added the fact-to-fact edge. Two semantic views that
+tasks to **15 ETL tasks**, and its dependency edges drop from 96 to 17 — 18 after step 6b added the fact-to-fact edge, and **22** after the 2026-09-22 correction below. Two semantic views that
 nothing read (`v_growth_of_100`, `v_universe`) and the superseded `trust_universe_seed.csv` are
 deleted. **No Silver or Gold notebook was edited**, so no published number may move — that is
 the acceptance test, and it passed: both jobs ran green (23 of 23, then 15 of 15 twice) and every figure came back identical. Spec: `specs/07_restructure/restructure.md`.
+
+**Orchestration edges corrected 2026-09-22.** `silver_etl_monthly_performance` reads
+`bronze.yf_pull_log` for the partial-month cutoff and for currency, but did not depend on it —
+the job ran green only because that task happened to finish first. Fixed, along with a missing
+`gold_etl_dim_ticker` -> `silver_etl_monthly_performance` edge and one deliberate gate edge that
+keeps every layer rendering as a single column in the job graph. **15 tasks, 22 edges**, deployed
+with `jobs/update` so the schedule and run history survive. No notebook changed, so no published
+number moves. Recorded in `specs/05_orchestration/workflow.md`.
 
 **Step 9, the presentation, is specced and awaiting approval** —
 `specs/06_presentation/presentation.md`. Five deliverables: README rewrite, five images, an
@@ -517,7 +525,7 @@ them. The five `<layer>_ddl` schema notebooks become one `ddl/ddl_schemas`.
 
 The change that matters is that **DDL left the schedule**. `CREATE TABLE` is deployment, not
 pipeline: it runs once, from `orchestration/setup.json`, which deliberately has no schedule.
-The monthly job is 15 ETL tasks — down from 44 — and its dependency edges drop from 96 to 17 — 18 since step 6b added the fact-to-fact edge,
+The monthly job is 15 ETL tasks — down from 44 — and its dependency edges drop from 96 to 17 — 18 after step 6b added the fact-to-fact edge, and **22 today**, after the 2026-09-22 pass that declared the reads Silver was making without depending on them,
 because removing the DDL gate nodes let each source run as its own lane from Landing to Bronze
 before converging at Silver. That reverses the layer-gate decision of step 8 for a stated
 reason: with the gate nodes gone, layer gates would have meant 20 crossing edges where lanes
