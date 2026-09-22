@@ -19,7 +19,7 @@ Nothing here is design work. Every tile is a view, a chart type and two or three
 | Data Connectivity mode | **Import** |
 | Catalog / Database | `index-vs-trust-pipeline` / `semantic` |
 
-**Import, not DirectQuery.** The largest view used here is 445 rows. Import makes the report
+**Import, not DirectQuery.** The largest view used here is 1,320 rows. Import makes the report
 open instantly, survives the warehouse auto-stopping after 10 minutes, and still refreshes
 on demand. DirectQuery would wake the warehouse on every click for no benefit.
 

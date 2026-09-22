@@ -200,7 +200,7 @@
   <header>
     <p class="eyebrow">GOLD LAYER &middot; DIMENSIONAL MODEL</p>
     <h1>Index vs Trust Star Schema</h1>
-    <p class="subtitle">Two dimensions, two facts, and every join direct &mdash; the model behind
+    <p class="subtitle">One fact, four dimensions and one bridge &mdash; the model behind
       &ldquo;what share of UK investment trusts beat the S&amp;P 500?&rdquo;</p>
     <div class="flow">
       <span>landing</span><i>&rarr;</i>
@@ -212,10 +212,12 @@
   </header>
 
   <section>
-    <h2>The star</h2>
-    <p>Both dimensions join <strong>directly</strong> to both facts. There is no intermediate table
-      anywhere in the model, which is what makes it a star rather than a snowflake: every question the
-      dashboard asks is one join away from the measures.</p>
+    <h2>The star, and the one hop in it</h2>
+    <p>Three dimensions join the fact <strong>directly</strong>. <code>dim_manager</code> does not:
+      it reaches the fact through <code>bridge_ticker_manager</code>, because a trust has several
+      managers and a manager can have several trusts. <strong>That one hop means this is not a pure
+      star</strong> &mdash; it is the price of modelling a genuine many-to-many honestly, and it is
+      stated here rather than glossed.</p>
 
     <div class="legend">
       <span class="legend-item"><span class="swatch d"></span>Dimension</span>
@@ -226,7 +228,7 @@
 
     <figure>
       <div class="fig-scroll">
-        <svg class="diagram" viewBox="0 0 1000 700" role="img" aria-label="Star schema: dim_ticker and dim_date each join directly to both fact_monthly_performance and fact_horizon_performance, giving four direct joins and no intermediate tables.">
+        <svg class="diagram" viewBox="0 0 1000 830" role="img" aria-label="Star schema: dim_ticker, dim_management_group and dim_date each join fact_horizon_performance directly, while dim_manager reaches the same fact through bridge_ticker_manager, adding one hop.">
           <defs>
             <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
               <path d="M0,0 L10,5 L0,10 z" fill="currentColor"></path>
@@ -234,72 +236,95 @@
           </defs>
 
           <!-- connectors first, so the boxes sit on top of them -->
-          <line class="conn" x1="180" y1="260" x2="180" y2="418" marker-end="url(#ar)"></line>
-          <line class="conn" x1="820" y1="260" x2="820" y2="418" marker-end="url(#ar)"></line>
-          <line class="conn" x1="370" y1="260" x2="694" y2="418" marker-end="url(#ar)"></line>
-          <line class="conn" x1="630" y1="260" x2="306" y2="418" marker-end="url(#ar)"></line>
+          <line class="conn" x1="175" y1="232" x2="360" y2="336" marker-end="url(#ar)"></line>
+          <line class="conn" x1="500" y1="232" x2="500" y2="336" marker-end="url(#ar)"></line>
+          <line class="conn" x1="825" y1="232" x2="640" y2="336" marker-end="url(#ar)"></line>
+          <line class="conn" x1="300" y1="726" x2="358" y2="726" marker-end="url(#ar)"></line>
+          <line class="conn" x1="500" y1="648" x2="500" y2="580" marker-end="url(#ar)"></line>
 
-          <rect class="lab-bg" x="137" y="332" width="86" height="18" rx="3"></rect>
-          <text class="lab" x="180" y="345" text-anchor="middle">ticker_key</text>
+          <rect class="lab-bg" x="212" y="272" width="86" height="18" rx="3"></rect>
+          <text class="lab" x="255" y="285" text-anchor="middle">ticker_key</text>
 
-          <rect class="lab-bg" x="777" y="332" width="86" height="18" rx="3"></rect>
-          <text class="lab" x="820" y="345" text-anchor="middle">month_key</text>
+          <rect class="lab-bg" x="424" y="275" width="152" height="18" rx="3"></rect>
+          <text class="lab" x="500" y="288" text-anchor="middle">management_group_key</text>
 
-          <rect class="lab-bg" x="386" y="285" width="86" height="18" rx="3"></rect>
-          <text class="lab" x="429" y="298" text-anchor="middle">ticker_key</text>
+          <rect class="lab-bg" x="702" y="272" width="86" height="18" rx="3"></rect>
+          <text class="lab" x="745" y="285" text-anchor="middle">month_key</text>
 
-          <rect class="lab-bg" x="528" y="285" width="86" height="18" rx="3"></rect>
-          <text class="lab" x="571" y="298" text-anchor="middle">month_key</text>
+          <rect class="lab-bg" x="286" y="694" width="92" height="18" rx="3"></rect>
+          <text class="lab" x="332" y="707" text-anchor="middle">manager_key</text>
+
+          <rect class="lab-bg" x="457" y="596" width="86" height="18" rx="3"></rect>
+          <text class="lab" x="500" y="609" text-anchor="middle">ticker_key</text>
 
           <!-- dim_ticker -->
-          <rect class="b-body" x="50" y="40" width="360" height="220" rx="8"></rect>
-          <path class="b-head-d" d="M50,48 a8,8 0 0 1 8,-8 h344 a8,8 0 0 1 8,8 v36 h-360 z"></path>
-          <text class="b-title" x="68" y="72">dim_ticker</text>
-          <text class="b-tag" x="68" y="110">SCD TYPE 2 &middot; 121 ROWS</text>
-          <text class="row" x="68" y="136"><tspan class="kd">PK</tspan>&#160;&#160;ticker_key</text>
-          <text class="row" x="68" y="162">ticker &middot; entity_type &middot; aic_sector</text>
-          <text class="row" x="68" y="188" style="fill:var(--dim)">manager &middot; management_group &middot; status</text>
-          <text class="row" x="68" y="214">effective_start / end_month &middot; is_current</text>
-          <text class="row-note" x="68" y="238">a new version opens when those three change</text>
+          <rect class="b-body" x="30" y="40" width="290" height="192" rx="8"></rect>
+          <path class="b-head-d" d="M30,48 a8,8 0 0 1 8,-8 h274 a8,8 0 0 1 8,8 v36 h-290 z"></path>
+          <text class="b-title" x="48" y="72">dim_ticker</text>
+          <text class="b-tag" x="48" y="110">SCD TYPE 2 &middot; 102 ROWS</text>
+          <text class="row" x="48" y="136"><tspan class="kd">PK</tspan>&#160;&#160;ticker_key</text>
+          <text class="row" x="48" y="162">ticker &middot; entity_type &middot; aic_sector</text>
+          <text class="row" x="48" y="188" style="fill:var(--dim)">manager &middot; management_group</text>
+          <text class="row-note" x="48" y="212">a new version opens when those two change</text>
+
+          <!-- dim_management_group -->
+          <rect class="b-body" x="355" y="40" width="290" height="192" rx="8"></rect>
+          <path class="b-head-d" d="M355,48 a8,8 0 0 1 8,-8 h274 a8,8 0 0 1 8,8 v36 h-290 z"></path>
+          <text class="b-title" x="373" y="72">dim_management_group</text>
+          <text class="b-tag" x="373" y="110">53 ROWS</text>
+          <text class="row" x="373" y="136"><tspan class="kd">PK</tspan>&#160;&#160;management_group_key</text>
+          <text class="row" x="373" y="162">management_group &middot; trusts_managed</text>
+          <text class="row-note" x="373" y="188">single-valued, so no bridge is needed:</text>
+          <text class="row-note" x="373" y="210">the fact carries the key and joins it directly</text>
 
           <!-- dim_date -->
-          <rect class="b-body" x="590" y="40" width="360" height="220" rx="8"></rect>
-          <path class="b-head-d" d="M590,48 a8,8 0 0 1 8,-8 h344 a8,8 0 0 1 8,8 v36 h-360 z"></path>
-          <text class="b-title" x="608" y="72">dim_date</text>
-          <text class="b-tag" x="608" y="110">MONTHLY &middot; 181 ROWS &middot; 2011-08 &#8594; 2026-08</text>
-          <text class="row" x="608" y="136"><tspan class="kd">PK</tspan>&#160;&#160;month_key</text>
-          <text class="row" x="608" y="162">month_start &middot; year &middot; month_label</text>
-          <text class="row" x="608" y="188">market_event</text>
-          <text class="row-note" x="608" y="214">month_key is a plain YYYYMM integer, not a hash,</text>
-          <text class="row-note" x="608" y="236">so a fact row stays readable without a join</text>
-
-          <!-- fact_monthly_performance -->
-          <rect class="b-body" x="30" y="418" width="400" height="224" rx="8"></rect>
-          <path class="b-head-f" d="M30,426 a8,8 0 0 1 8,-8 h384 a8,8 0 0 1 8,8 v36 h-400 z"></path>
-          <text class="b-title" x="48" y="450">fact_monthly_performance</text>
-          <text class="b-tag" x="48" y="488">GRAIN: TICKER &#215; MONTH &middot; 15,604 ROWS</text>
-          <text class="row" x="48" y="514"><tspan class="kf">PK</tspan>&#160;&#160;monthly_key</text>
-          <text class="row" x="48" y="540"><tspan class="kf">FK</tspan>&#160;&#160;ticker_key &middot; month_key</text>
-          <text class="row" x="48" y="566">close &middot; dividend</text>
-          <text class="row" x="48" y="592">price_return &middot; total_return</text>
-          <text class="row-note" x="48" y="618">carries the version that was live in that month</text>
+          <rect class="b-body" x="680" y="40" width="290" height="192" rx="8"></rect>
+          <path class="b-head-d" d="M680,48 a8,8 0 0 1 8,-8 h274 a8,8 0 0 1 8,8 v36 h-290 z"></path>
+          <text class="b-title" x="698" y="72">dim_date</text>
+          <text class="b-tag" x="698" y="110">MONTHLY &middot; 181 ROWS &middot; 2011-08 &#8594; 2026-08</text>
+          <text class="row" x="698" y="136"><tspan class="kd">PK</tspan>&#160;&#160;month_key</text>
+          <text class="row" x="698" y="162">month_start &middot; year &middot; month_label</text>
+          <text class="row-note" x="698" y="188">role-played three times: the as-of month,</text>
+          <text class="row-note" x="698" y="210">the window start and the window end</text>
 
           <!-- fact_horizon_performance -->
-          <rect class="b-body" x="570" y="418" width="400" height="224" rx="8"></rect>
-          <path class="b-head-f" d="M570,426 a8,8 0 0 1 8,-8 h384 a8,8 0 0 1 8,8 v36 h-400 z"></path>
-          <text class="b-title" x="588" y="450">fact_horizon_performance</text>
-          <text class="b-tag" x="588" y="488">GRAIN: TICKER &#215; HORIZON &middot; 445 ROWS</text>
-          <text class="row" x="588" y="514"><tspan class="kf">PK</tspan>&#160;&#160;horizon_key</text>
-          <text class="row" x="588" y="540"><tspan class="kf">FK</tspan>&#160;&#160;ticker_key &middot; month_key</text>
-          <text class="row" x="588" y="566">total_return &middot; volatility &middot; income_return</text>
-          <text class="row" x="588" y="592">index_return_same_period &middot; beat_index</text>
-          <text class="row-note" x="588" y="618">one row per ticker at 15, 10, 5, 3 and 1 years</text>
+          <rect class="b-body" x="290" y="336" width="420" height="244" rx="8"></rect>
+          <path class="b-head-f" d="M290,344 a8,8 0 0 1 8,-8 h404 a8,8 0 0 1 8,8 v36 h-420 z"></path>
+          <text class="b-title" x="308" y="368">fact_horizon_performance</text>
+          <text class="b-tag" x="308" y="406">GRAIN: TICKER &#215; HORIZON &middot; 440 ROWS &middot; THE ONLY FACT</text>
+          <text class="row" x="308" y="432"><tspan class="kf">PK</tspan>&#160;&#160;horizon_key</text>
+          <text class="row" x="308" y="458"><tspan class="kf">FK</tspan>&#160;&#160;ticker_key &middot; management_group_key</text>
+          <text class="row" x="308" y="484"><tspan class="kf">FK</tspan>&#160;&#160;month_key &middot; start_month_key &middot; end_month_key</text>
+          <text class="row" x="308" y="510">total_return &middot; volatility &middot; income_return</text>
+          <text class="row" x="308" y="536">index_return_same_period &middot; beat_index</text>
+          <text class="row-note" x="308" y="562">one row per ticker at 15, 10, 5, 3 and 1 years</text>
+
+          <!-- dim_manager -->
+          <rect class="b-body" x="30" y="648" width="270" height="156" rx="8"></rect>
+          <path class="b-head-d" d="M30,656 a8,8 0 0 1 8,-8 h254 a8,8 0 0 1 8,8 v36 h-270 z"></path>
+          <text class="b-title" x="48" y="680">dim_manager</text>
+          <text class="b-tag" x="48" y="718">227 ROWS</text>
+          <text class="row" x="48" y="744"><tspan class="kd">PK</tspan>&#160;&#160;manager_key</text>
+          <text class="row" x="48" y="770">manager_name &middot; trusts_managed</text>
+          <text class="row-note" x="48" y="794">one row per named individual</text>
+
+          <!-- bridge_ticker_manager -->
+          <rect class="b-body" x="358" y="648" width="284" height="156" rx="8"></rect>
+          <path class="b-head-f" d="M358,656 a8,8 0 0 1 8,-8 h268 a8,8 0 0 1 8,8 v36 h-284 z"></path>
+          <text class="b-title" x="376" y="680">bridge_ticker_manager</text>
+          <text class="b-tag" x="376" y="718">230 ROWS &middot; 97 TRUSTS &middot; THE ONE HOP</text>
+          <text class="row" x="376" y="744"><tspan class="kf">FK</tspan>&#160;&#160;ticker_key &middot; manager_key</text>
+          <text class="row" x="376" y="770">manager_position &middot; allocation_factor</text>
+          <text class="row-note" x="376" y="794">keyed on the versioned ticker_key</text>
         </svg>
       </div>
-      <figcaption>Four joins, no intermediate tables. Each arrow runs from a dimension to a fact that
-        carries its key. Both facts were checked for referential integrity after the last full run:
-        <strong>zero orphan <code>ticker_key</code>, zero orphan <code>month_key</code></strong>.</figcaption>
+      <figcaption>Three direct joins and one hop. Each arrow runs from a dimension to the table that
+        carries its key. Checked for referential integrity after the last full run:
+        <strong>zero orphan <code>ticker_key</code>, zero orphan <code>month_key</code>, zero orphan
+        <code>manager_key</code></strong>, and the bridge's <code>allocation_factor</code> sums to
+        exactly <strong>1.0</strong> for every one of the 97 trusts.</figcaption>
     </figure>
+  </section>
   </section>
 
   <div class="callout">
@@ -313,12 +338,14 @@
   <section>
     <h2>How an SCD2 version reaches a fact row</h2>
     <p>A trust changes manager. <code>dim_ticker</code> closes the old row and opens a new one, so the
-      same ticker now has two surrogate keys. The question a reviewer always asks next is which one a
-      fact row carries &mdash; and the answer differs between the two facts, on purpose.</p>
+      same ticker now has two surrogate keys. The question a reviewer always asks next is which one
+      carries downstream &mdash; and since the monthly fact was retired, the answer is the bridge.
+      <code>bridge_ticker_manager</code> is keyed on the <strong>versioned</strong>
+      <code>ticker_key</code>, so it is the one table that reads the history.</p>
 
     <figure>
       <div class="fig-scroll">
-        <svg class="diagram" viewBox="0 0 1000 440" role="img" aria-label="Two dim_ticker rows for one ticker after a manager change: the old version closed at 202608 and a new one opened at 202609, with three fact_monthly_performance rows each pointing at the version that was current in its own month.">
+        <svg class="diagram" viewBox="0 0 1000 440" role="img" aria-label="Two dim_ticker rows for one ticker after a manager change: the old version closed at 202608 and a new one opened at 202609, with the bridge_ticker_manager rows for each version pointing at the manager who ran the trust during it.">
           <defs>
             <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
               <path d="M0,0 L10,5 L0,10 z" fill="currentColor"></path>
@@ -352,39 +379,38 @@
           <text class="row" x="530" y="152">null</text>
           <text class="row" x="620" y="152" style="fill:var(--dim); font-weight:600">true</text>
 
-          <text class="b-tag" x="40" y="226">fact_monthly_performance &mdash; THREE OF ITS ROWS</text>
+          <text class="b-tag" x="40" y="226">bridge_ticker_manager &mdash; ITS ROWS FOR THIS TICKER</text>
 
-          <rect class="b-body" x="40" y="240" width="480" height="150" rx="8"></rect>
+          <rect class="b-body" x="40" y="240" width="480" height="132" rx="8"></rect>
           <path class="b-head-f" d="M40,248 a8,8 0 0 1 8,-8 h464 a8,8 0 0 1 8,8 v30 h-480 z"></path>
-          <text class="lab" x="56" y="266">month_key</text>
-          <text class="lab" x="200" y="266">ticker_key</text>
+          <text class="lab" x="56" y="266">ticker_key</text>
+          <text class="lab" x="210" y="266">manager_key</text>
+          <text class="lab" x="380" y="266">allocation_factor</text>
 
           <line class="axis" x1="40" y1="315" x2="520" y2="315"></line>
-          <line class="axis" x1="40" y1="352" x2="520" y2="352"></line>
 
-          <text class="row" x="56" y="302">202512</text>
-          <text class="row" x="200" y="302">a1b2c3d4</text>
-          <text class="row" x="56" y="339">202608</text>
-          <text class="row" x="200" y="339">a1b2c3d4</text>
-          <text class="row" x="56" y="376">202609</text>
-          <text class="row" x="200" y="376">e5f6a7b8</text>
+          <text class="row" x="56" y="302">a1b2c3d4</text>
+          <text class="row" x="210" y="302">Manager A</text>
+          <text class="row" x="380" y="302">1.0</text>
+          <text class="row" x="56" y="339">e5f6a7b8</text>
+          <text class="row" x="210" y="339">Manager B</text>
+          <text class="row" x="380" y="339">1.0</text>
 
-          <line class="conn" x1="530" y1="298" x2="748" y2="104" marker-end="url(#ar2)"></line>
-          <line class="conn" x1="530" y1="335" x2="748" y2="112" marker-end="url(#ar2)"></line>
-          <line class="conn" x1="530" y1="372" x2="748" y2="152" marker-end="url(#ar2)"></line>
+          <line class="conn" x1="530" y1="298" x2="748" y2="112" marker-end="url(#ar2)"></line>
+          <line class="conn" x1="530" y1="335" x2="748" y2="152" marker-end="url(#ar2)"></line>
 
-          <text class="row-note" x="792" y="286">each fact row carries</text>
-          <text class="row-note" x="792" y="306">the version that was</text>
-          <text class="row-note" x="792" y="326">current in its own</text>
-          <text class="row-note" x="792" y="346">month &mdash; resolved</text>
-          <text class="row-note" x="792" y="366">once, at build time</text>
+          <text class="row-note" x="792" y="286">the bridge rows for the</text>
+          <text class="row-note" x="792" y="306">closed version stay with</text>
+          <text class="row-note" x="792" y="326">it, so &ldquo;who ran this</text>
+          <text class="row-note" x="792" y="346">trust then&rdquo; survives the</text>
+          <text class="row-note" x="792" y="366">change</text>
 
-          <text class="row-note" x="40" y="420">The old version closes in the last month observed; the new one opens the month after. No fact row can map to two versions.</text>
+          <text class="row-note" x="40" y="410">The old version closes in the last month observed; the new one opens the month after. No bridge row can map to two versions.</text>
         </svg>
       </div>
       <figcaption>The split lands at <em>detection</em> time, not at the real handover date &mdash; the
         manager file is a snapshot carrying no dates, so on a first run every ticker is version 1 and
-        all 121 rows are current. That is a stated limit of the source, not of the model: the
+        all 102 rows are current. That is a stated limit of the source, not of the model: the
         mechanism is proven by changing one manager and re-running, after which that ticker has two
         rows and only the later one is current. <code>fact_horizon_performance</code> always carries
         the current version instead, because it is an as-of-today summary.</figcaption>
@@ -392,66 +418,96 @@
   </section>
 
   <section>
-    <h2>What a snowflake would have cost</h2>
-    <p>The obvious-looking move is a <code>dim_manager</code> table. It was considered and rejected,
-      and the drawing shows why &mdash; it adds two hops and a bridge table to reach the same measures.</p>
+    <h2>Why the bridge earns its place</h2>
+    <p>A bridge table is not free: it adds a hop and it fans measures out. It is worth it only when
+      the relationship is genuinely many-to-many <strong>in both directions</strong>, and here it is.
+      The drawing shows the two grains that were rejected and the one that was built.</p>
 
     <figure>
       <div class="fig-scroll">
-        <svg class="diagram" viewBox="0 0 1000 300" role="img" aria-label="Comparison: a rejected dim_manager and bridge table adding two hops on the left, against manager kept as a column on dim_ticker joining the fact directly on the right.">
+        <svg class="diagram" viewBox="0 0 1000 320" role="img" aria-label="Comparison: on the left, a rejected dim_manager built on the whole manager list, which would be one row per trust; on the right, the individual grain that was built, reaching the fact through a bridge.">
           <defs>
             <marker id="ar3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
               <path d="M0,0 L10,5 L0,10 z" fill="currentColor"></path>
             </marker>
           </defs>
 
-          <rect class="ghost" x="30" y="48" width="190" height="82" rx="8"></rect>
-          <text class="ghost-t" x="50" y="80">dim_manager</text>
-          <text class="row-note" x="50" y="104">227 people</text>
+          <rect class="ghost" x="30" y="48" width="420" height="82" rx="8"></rect>
+          <text class="ghost-t" x="50" y="80">dim_manager, on the manager list</text>
+          <text class="row-note" x="50" y="104">&ldquo;Gabriel Sacks, Ng Xin Yao&rdquo; &mdash; 97 rows for 97 trusts</text>
 
-          <rect class="ghost" x="280" y="48" width="230" height="82" rx="8"></rect>
-          <text class="ghost-t" x="300" y="80">bridge_ticker_manager</text>
-          <text class="row-note" x="300" y="104">many-to-many, fans out</text>
+          <text class="b-tag" x="30" y="168">REJECTED &mdash; EVERY LIST IS UNIQUE, SO IT IS dim_ticker RENAMED</text>
 
-          <line class="conn-dash" x1="222" y1="89" x2="272" y2="89" marker-end="url(#ar3)"></line>
-          <line class="conn-dash" x1="512" y1="89" x2="582" y2="89" marker-end="url(#ar3)"></line>
+          <rect class="ghost" x="30" y="208" width="420" height="82" rx="8"></rect>
+          <text class="ghost-t" x="50" y="240">dim_manager, lead manager only</text>
+          <text class="row-note" x="50" y="264">first name in the list, no bridge needed</text>
 
-          <text class="b-tag" x="30" y="168">REJECTED &mdash; TWO EXTRA HOPS TO REACH THE SAME MEASURES</text>
+          <text class="b-tag" x="30" y="308">REJECTED &mdash; THE SOURCE NEVER SAYS WHO LEADS</text>
 
-          <rect class="b-body" x="590" y="48" width="330" height="82" rx="8"></rect>
-          <path class="b-head-d" d="M590,56 a8,8 0 0 1 8,-8 h314 a8,8 0 0 1 8,8 v30 h-330 z"></path>
-          <text class="b-title" x="608" y="77" style="font-size:15px">dim_ticker</text>
-          <text class="row" x="608" y="112" style="fill:var(--dim)">manager &middot; management_group</text>
+          <rect class="b-body" x="560" y="30" width="410" height="76" rx="8"></rect>
+          <path class="b-head-d" d="M560,38 a8,8 0 0 1 8,-8 h394 a8,8 0 0 1 8,8 v30 h-410 z"></path>
+          <text class="b-title" x="578" y="59" style="font-size:15px">dim_manager</text>
+          <text class="row-note" x="578" y="90">227 individuals, one row each</text>
 
-          <rect class="b-body" x="590" y="200" width="330" height="66" rx="8"></rect>
-          <path class="b-head-f" d="M590,208 a8,8 0 0 1 8,-8 h314 a8,8 0 0 1 8,8 v30 h-330 z"></path>
-          <text class="b-title" x="608" y="229" style="font-size:15px">fact_horizon_performance</text>
-          <text class="row-note" x="608" y="254">beat rate by manager = one GROUP BY</text>
+          <rect class="b-body" x="560" y="158" width="410" height="76" rx="8"></rect>
+          <path class="b-head-f" d="M560,166 a8,8 0 0 1 8,-8 h394 a8,8 0 0 1 8,8 v30 h-410 z"></path>
+          <text class="b-title" x="578" y="187" style="font-size:15px">bridge_ticker_manager</text>
+          <text class="row-note" x="578" y="218">230 rows &middot; allocation_factor keeps counts honest</text>
 
-          <line class="conn" x1="755" y1="130" x2="755" y2="194" marker-end="url(#ar3)"></line>
-          <rect class="lab-bg" x="712" y="152" width="86" height="18" rx="3"></rect>
-          <text class="lab" x="755" y="165" text-anchor="middle">ticker_key</text>
+          <rect class="b-body" x="560" y="270" width="410" height="42" rx="8"></rect>
+          <path class="b-head-f" d="M560,278 a8,8 0 0 1 8,-8 h394 a8,8 0 0 1 8,8 v30 h-410 z"></path>
+          <text class="b-title" x="578" y="299" style="font-size:15px">fact_horizon_performance</text>
+
+          <line class="conn" x1="765" y1="106" x2="765" y2="152" marker-end="url(#ar3)"></line>
+          <rect class="lab-bg" x="719" y="118" width="92" height="18" rx="3"></rect>
+          <text class="lab" x="765" y="131" text-anchor="middle">manager_key</text>
+
+          <line class="conn" x1="765" y1="234" x2="765" y2="264" marker-end="url(#ar3)"></line>
+          <rect class="lab-bg" x="722" y="238" width="86" height="18" rx="3"></rect>
+          <text class="lab" x="765" y="251" text-anchor="middle">ticker_key</text>
         </svg>
       </div>
-      <figcaption>224 of the 227 named managers run exactly one trust, so &ldquo;best manager&rdquo; and
-        &ldquo;best trust&rdquo; are already the same query. A manager dimension would buy a bridge table
-        and a fan-out trap in exchange for nothing, so manager stays an attribute &mdash; a versioned
-        one, which is the part that actually carries information.</figcaption>
+      <figcaption>Both directions are multi, which is what the bridge is for. <strong>70 of the 97</strong>
+        trusts with a named manager have more than one &mdash; NB Private Equity Partners names twelve
+        &mdash; and <strong>three managers run two trusts each</strong>: Sat Duhra (BNKR, HFEL), Simon
+        Gergel (BUT, MRCH) and Anthony Lynch (JCH, MRC). Those three are the entire justification. Take
+        them away and the relationship is one-to-many, and the manager could hang off the ticker with no
+        bridge at all &mdash; which is why a verification cell asserts them by name.</figcaption>
     </figure>
+
+    <div class="callout">
+      <p class="eyebrow">THE FAN-OUT, AND HOW IT IS HANDLED</p>
+      <p>A bridge means a trust with twelve managers is counted twelve times. That is not always wrong,
+        but it is always a choice, so the bridge carries <code>allocation_factor</code> &mdash; one over
+        the manager count &mdash; and the semantic layer names which basis it uses:</p>
+      <p><strong>Impact</strong> ignores the factor, so a trust counts once for each of its managers.
+        Right for &ldquo;what share of managers had a trust that beat the index&rdquo;.
+        <strong>Allocated</strong> weights by it, so the weights sum to one per trust and the total still
+        reconciles to the 440 rows in the fact. <code>v_beat_rate_by_cut</code> uses impact, and says so
+        in a comment.</p>
+    </div>
   </section>
 
   <section>
     <h2>Considered and rejected</h2>
     <dl class="rejects">
       <div class="reject">
-        <dt>dim_manager</dt>
-        <dd>Many-to-many with tickers, needing a bridge table that fans measures out. The full
-          comma-separated manager list is kept on <code>dim_ticker</code>, so no names are lost.</dd>
+        <dt>dim_manager on the manager list</dt>
+        <dd>One row per comma-separated list rather than per person. Every trust&rsquo;s list is
+          unique, so it would have been 97 rows for 97 trusts &mdash; <code>dim_ticker</code> under
+          another name. The individual grain was built instead.</dd>
       </div>
       <div class="reject">
-        <dt>dim_management_group</dt>
-        <dd>It has no attributes of its own. A table would snowflake the model for nothing &mdash;
-          beat rate by group is a <code>GROUP BY</code>.</dd>
+        <dt>lead manager only</dt>
+        <dd>Would have avoided the bridge entirely by keeping just the first name. Rejected because
+          the source never says who leads &mdash; the order is the order it was written in, and
+          treating it as seniority would be inventing data.</dd>
+      </div>
+      <div class="reject">
+        <dt>the monthly fact</dt>
+        <dd>Retired at step 13. It had exactly one consumer and no view or dashboard tile read it,
+          so the horizon fact reads <code>silver.monthly_performance</code> directly and Gold holds
+          one fact at one grain.</dd>
       </div>
       <div class="reject">
         <dt>rank_band</dt>
@@ -477,7 +533,7 @@
           <tr><td class="c">ticker_key</td><td><span class="pk">PK</span></td><td class="n">MD5(ticker | effective_start_month)</td></tr>
           <tr><td class="c">ticker</td><td></td><td class="n">business key &mdash; not unique here, one row per version</td></tr>
           <tr><td class="c">entity_type</td><td></td><td class="n">Trust or Index, so the comparison is a self-join</td></tr>
-          <tr><td class="c">manager, management_group, status</td><td></td><td class="n">the three SCD2 drivers</td></tr>
+          <tr><td class="c">manager, management_group</td><td></td><td class="n">the two SCD2 drivers</td></tr>
           <tr><td class="c">manager_structure</td><td></td><td class="n">sole or multi, from the count of named managers</td></tr>
           <tr><td class="c">aic_sector, currency, source_url</td><td></td><td class="n">attributes; the source is cited, not assumed</td></tr>
           <tr><td class="c">price_source, data_status</td><td></td><td class="n">yahoo / archive / none &middot; usable / stub / no-data</td></tr>
@@ -496,14 +552,29 @@
       </div>
 
       <div class="card">
-        <div class="card-head f"><span class="name">fact_monthly_performance</span><span class="kind">FACT</span></div>
+        <div class="card-head d"><span class="name">dim_manager</span><span class="kind">DIMENSION &middot; 227</span></div>
         <table class="cols">
-          <tr><td class="c">monthly_key</td><td><span class="pk">PK</span></td><td class="n">MD5(ticker | month_key)</td></tr>
-          <tr><td class="c">ticker_key, month_key</td><td><span class="pk">FK</span></td><td class="n">the version live that month, resolved at build time</td></tr>
-          <tr><td class="c">close, dividend</td><td></td><td class="n">from Yahoo &mdash; never Adj_Close</td></tr>
-          <tr><td class="c">price_return</td><td></td><td class="n">null across a gap, never zero</td></tr>
-          <tr><td class="c">total_return</td><td></td><td class="n">(close + dividend) / prior close &minus; 1</td></tr>
-          <tr><td class="c">return_basis</td><td></td><td class="n">total, or price for the two archive trusts</td></tr>
+          <tr><td class="c">manager_key</td><td><span class="pk">PK</span></td><td class="n">MD5(manager_name)</td></tr>
+          <tr><td class="c">manager_name</td><td></td><td class="n">one named individual, split from the list</td></tr>
+          <tr><td class="c">trusts_managed</td><td></td><td class="n">one for 224 of them, two for three</td></tr>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="card-head d"><span class="name">dim_management_group</span><span class="kind">DIMENSION &middot; 53</span></div>
+        <table class="cols">
+          <tr><td class="c">management_group_key</td><td><span class="pk">PK</span></td><td class="n">MD5(management_group)</td></tr>
+          <tr><td class="c">management_group</td><td></td><td class="n">51 houses plus NoInfo and NotApplicable</td></tr>
+          <tr><td class="c">trusts_managed</td><td></td><td class="n">sums to 102, the whole dimension</td></tr>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="card-head f"><span class="name">bridge_ticker_manager</span><span class="kind">BRIDGE &middot; 230</span></div>
+        <table class="cols">
+          <tr><td class="c">ticker_key, manager_key</td><td><span class="pk">FK</span></td><td class="n">the grain &mdash; and ticker_key is versioned</td></tr>
+          <tr><td class="c">manager_position</td><td></td><td class="n">source order, which is not seniority</td></tr>
+          <tr><td class="c">allocation_factor</td><td></td><td class="n">one over the manager count; sums to 1 per trust</td></tr>
         </table>
       </div>
 
