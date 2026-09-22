@@ -60,9 +60,10 @@ scan() { # scan <pattern> [extra grep args...]
 }
 
 scan_number() { # scan_number <digits> [extra grep args...]
-  # Bounded so 121 does not match inside 35,121 and 445 does not match inside 1,445.
+  # Bounded so 121 does not match inside 35,121, inside a CSS hex like #121B20, or inside a
+  # word; and 445 does not match inside 1,445.
   local n="$1"; shift
-  grep -rniE "(^|[^0-9,.])${n}($|[^0-9,.])" . "${EXCLUDES[@]}" --binary-files=without-match -l "$@" 2>/dev/null \
+  grep -rniE "(^|[^0-9,.#A-Za-z])${n}($|[^0-9,.A-Za-z])" . "${EXCLUDES[@]}" --binary-files=without-match -l "$@" 2>/dev/null \
     | grep -Ev "$SKIP_PATH" || true
 }
 
