@@ -223,6 +223,19 @@
       ]
     },
     {
+      "task_key": "gold_etl_dim_mandate",
+      "notebook_task": {
+        "notebook_path": "etl/03_gold/gold_etl_dim_mandate",
+        "source": "GIT"
+      },
+      "timeout_seconds": 1800,
+      "depends_on": [
+        {
+          "task_key": "gold_etl_dim_ticker"
+        }
+      ]
+    },
+    {
       "task_key": "gold_etl_bridge_ticker_manager",
       "notebook_task": {
         "notebook_path": "etl/03_gold/gold_etl_bridge_ticker_manager",
@@ -239,13 +252,16 @@
       ]
     },
     {
-      "task_key": "gold_etl_fact_horizon_performance",
+      "task_key": "gold_etl_fact_monthly_performance",
       "notebook_task": {
-        "notebook_path": "etl/03_gold/gold_etl_fact_horizon_performance",
+        "notebook_path": "etl/03_gold/gold_etl_fact_monthly_performance",
         "source": "GIT"
       },
       "timeout_seconds": 1800,
       "depends_on": [
+        {
+          "task_key": "silver_etl_monthly_performance"
+        },
         {
           "task_key": "gold_etl_dim_date"
         },
@@ -253,7 +269,16 @@
           "task_key": "gold_etl_dim_ticker"
         },
         {
+          "task_key": "gold_etl_dim_manager"
+        },
+        {
           "task_key": "gold_etl_dim_management_group"
+        },
+        {
+          "task_key": "gold_etl_dim_mandate"
+        },
+        {
+          "task_key": "gold_etl_bridge_ticker_manager"
         }
       ]
     }
